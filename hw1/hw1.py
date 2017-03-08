@@ -7,50 +7,78 @@ import sys
 train = []
 with open(sys.argv[1], 'rb') as f:
 	data = f.read().splitlines()
+	i = 0
 	for line in data[1:]: # trim the first data which is header
 		line = [x.replace("\'", "") for x in str(line).split(',')[3:]]
+		if i % 18 != 10:
+			line = [float(x) for x in line]
 		train.append(line)
+		i += 1
 
 # 11-th data is string
-ITERATION = 100
+ITERATION = 10
 DATA_SIZE = int(len(train) / 18)
-FEATURE = [0] * 18
 ETA = 0.0001
 
 HOURS_OF_DAY = 24
 
-SF = 9 # PM 2.5 # selected feature
+SF = [9] # selected feature
 PERIOD = 9
-w = np.array([1] * (PERIOD + 1)) # 9 hr pm2.5 feature and constant
+w = [ [1.0] * (PERIOD + 1) ] * len(SF) # 9 hr pm2.5 feature and constant
+w = np.array(w)
+size_w = float(len(w) * len(w[0]))
 
 all_Ein = []
+
+def filter_data(SF, d):
+	
+	result = []
+	for sf in SF:
+		
+		result.append(train[d * 18 + sf])
+	
+	return result
+
+def filter_hours(data, start):
+
+	result = []
+	for l in range(len(data)):
+	
+		# fetch data in period and add constant
+		result.append(data[l][start : start + PERIOD] + [1.0])
+	
+	return result
+
+def predict(data, w):
+	
+	mul = data * w
+	return np.sum(mul) / size_w
 
 for i in range(ITERATION):
 
 	for d in range(DATA_SIZE):
 
-		print(d, "data")
 
-		data = [float(x) for x in train[18 * d + SF]]
-		print("PM 2.5 data:", data)
+		data = filter_data(SF, d)
 
 		this_Ein = []
 		for start in range(HOURS_OF_DAY - PERIOD - 1):
 			
-			fetch_data = data[start : start + PERIOD] # fetch 9 hr of data
-			fetch_data.append(1.0) # append constant
-			np_data = np.array(fetch_data)
+			fetch_data = filter_hours(data, start) # fetch hrs of data + constant
+			np_data = np.array(fetch_data) # convert into numpy object
 
-			yh = data[start + PERIOD] # right answer => y hat
+			yh = train[d * 18 + 9][start + PERIOD] # pm2.5 right answer => y hat
+			print("y hat=", yh)
 			
-			# we divide the dot result by (PERIOD + 1) to make it a ratio of every features
-			gradient_of_error = 2. * ( yh - np.dot(np_data, w) / (PERIOD + 1)) * (-1.) * np_data
+			dot_result = predict(np_data, w)
+			print("predict=", dot_result)
+			gradient_of_error = -2.0 * ( yh - dot_result) * np_data
 
 			# compute new w
 			w = w - ETA * gradient_of_error
-			print("w =", ["{:.3f}".format(x) for x in w], end=", ")
+			print("w =", w.round(2))
 
-			Ein = ( yh - np.dot(np_data, w) / (PERIOD + 1)) ** 2
+			Ein = ( yh - predict(np_data, w)) ** 2
 			print("Ein =", Ein)
 
 			this_Ein.append(Ein)
