@@ -1,5 +1,4 @@
 # ML 2017 hw1 
-
 import numpy as np
 import sys
 
@@ -32,21 +31,22 @@ with open(sys.argv[2], 'rb') as f:
 		test.append(line)
 		i += 1
 
+np.set_printoptions(precision = 2, suppress = True)
 
 # define constants
-ITERATION = 100
+ITERATION = 1000
 TRAIN_SIZE = int(len(train) / 18)
 TEST_SIZE = int(len(test) / 18)
 ETA = 0.0001
 
 HOURS_OF_DAY = 24
+PERIOD = 9
 
 #SF = [9] # selected feature
 SF = range(18) # selected feature
 NUM_FEATURE = len(SF)
-PERIOD = 9
-w = [ [1.0] * PERIOD + [1.0] ] * NUM_FEATURE # 9 hr pm2.5 feature and constant
-w = np.array(w)
+w = [ [0.0] * PERIOD + [0.0] ] * NUM_FEATURE # feature * (constant + period)
+w = np.random.random(np.shape(w)) - 0.5
 size_w = float(np.size(w))
 
 print("iteration =", ITERATION)
@@ -83,7 +83,7 @@ def predict(data, w):
 for i in range(ITERATION):
 
 	if i % 100 == 0:
-		print(i/100)
+		print("progress:", i/100, "%")
 		if i % 1000 == 0:
 			print(w.round(2))
 	
@@ -114,18 +114,24 @@ for i in range(ITERATION):
 
 		average_this_Ein = sum(this_Ein)/(HOURS_OF_DAY - PERIOD - 1)
 		# print("this_Ein =", average_this_Ein)	
-		all_Ein.append(average_this_Ein)
 		iter_Ein.append(average_this_Ein)
 
 	# compute new w
 	# gradient = sum_gradient / float(TRAIN_SIZE * (HOURS_OF_DAY - PERIOD - 1))
 	# w = w - ETA * gradient
 	# print("w =", w.round(2))
+	current_Ein = np.mean(iter_Ein)
 	if i % 10 == 0:
-		print("current Ein = ", np.mean(iter_Ein))
+		print("current Ein = ", current_Ein)
+
+	if i > 0 and current_Ein >= all_Ein[-1]:
+		print("got minimum Ein =", all_Ein[-1])
+		print("break")
+		break
+	else:
+		all_Ein.append(current_Ein)
 
 print("final average Ein = ", np.mean(all_Ein))
-
 print("final w = \n", w.round(2))
 
 f = open(sys.argv[3], "w")
