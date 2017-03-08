@@ -10,23 +10,48 @@ with open(sys.argv[1], 'rb') as f:
 	i = 0
 	for line in data[1:]: # trim the first data which is header
 		line = [x.replace("\'", "") for x in str(line).split(',')[3:]]
-		if i % 18 != 10:
-			line = [float(x) for x in line]
+
+		if i % 18 == 10:
+			line = [x.replace("NR", "0") for x in line]
+
+		line = [float(x) for x in line]
 		train.append(line)
 		i += 1
 
-# 11-th data is string
-ITERATION = 10
-DATA_SIZE = int(len(train) / 18)
+test = []
+with open(sys.argv[2], 'rb') as f:
+	data = f.read().splitlines()
+	i = 0
+	for line in data: # trim the first data which is header
+		line = [x.replace("\'", "") for x in str(line).split(',')[2:]]
+
+		if i % 18 == 10:
+			line = [x.replace("NR", "0") for x in line]
+
+		line = [float(x) for x in line]
+		test.append(line)
+		i += 1
+
+
+# define constants
+ITERATION = 100
+TRAIN_SIZE = int(len(train) / 18)
+TEST_SIZE = int(len(test) / 18)
 ETA = 0.0001
 
 HOURS_OF_DAY = 24
 
-SF = [9] # selected feature
+#SF = [9] # selected feature
+SF = range(18) # selected feature
+NUM_FEATURE = len(SF)
 PERIOD = 9
-w = [ [1.0] * (PERIOD + 1) ] * len(SF) # 9 hr pm2.5 feature and constant
+w = [ [1.0] * PERIOD + [1.0] ] * NUM_FEATURE # 9 hr pm2.5 feature and constant
 w = np.array(w)
-size_w = float(len(w) * len(w[0]))
+size_w = float(np.size(w))
+
+print("iteration =", ITERATION)
+print("eta =", ETA)
+print("selected features =", SF)
 
 all_Ein = []
 
@@ -54,10 +79,18 @@ def predict(data, w):
 	mul = data * w
 	return np.sum(mul) / size_w
 
+# train
 for i in range(ITERATION):
 
-	for d in range(DATA_SIZE):
+	if i % 100 == 0:
+		print(i/100)
+		if i % 1000 == 0:
+			print(w.round(2))
+	
+	iter_Ein = []
 
+	sum_gradient = np.zeros([NUM_FEATURE, PERIOD + 1])
+	for d in range(TRAIN_SIZE):
 
 		data = filter_data(SF, d)
 
@@ -68,24 +101,44 @@ for i in range(ITERATION):
 			np_data = np.array(fetch_data) # convert into numpy object
 
 			yh = train[d * 18 + 9][start + PERIOD] # pm2.5 right answer => y hat
-			print("y hat=", yh)
+			# print("y hat=", yh)
 			
-			dot_result = predict(np_data, w)
-			print("predict=", dot_result)
-			gradient_of_error = -2.0 * ( yh - dot_result) * np_data
-
-			# compute new w
-			w = w - ETA * gradient_of_error
-			print("w =", w.round(2))
+			#sum_gradient += (-2.) * (yh - np.sum(np_data * w)/size_w ) * np_data
+			gradient = (-2.) * (yh - predict(np_data, w)) * np_data
+			w = w - ETA * gradient
 
 			Ein = ( yh - predict(np_data, w)) ** 2
-			print("Ein =", Ein)
+			# print("Ein =", Ein)
 
 			this_Ein.append(Ein)
 
 		average_this_Ein = sum(this_Ein)/(HOURS_OF_DAY - PERIOD - 1)
-		print("this_Ein =", average_this_Ein)
-		
+		# print("this_Ein =", average_this_Ein)	
 		all_Ein.append(average_this_Ein)
+		iter_Ein.append(average_this_Ein)
 
-print("average Ein = ", sum(all_Ein)/(DATA_SIZE * ITERATION) )
+	# compute new w
+	# gradient = sum_gradient / float(TRAIN_SIZE * (HOURS_OF_DAY - PERIOD - 1))
+	# w = w - ETA * gradient
+	# print("w =", w.round(2))
+	if i % 10 == 0:
+		print("current Ein = ", np.mean(iter_Ein))
+
+print("final average Ein = ", np.mean(all_Ein))
+
+print("final w = \n", w.round(2))
+
+f = open(sys.argv[3], "w")
+
+f.write("id,value\n")
+# test
+for d in range(TEST_SIZE):
+	
+	data = filter_data(SF, d)
+
+	fetch_data = filter_hours(data, 9 - PERIOD)
+	np_data = np.array(fetch_data)
+
+	dot_result = int(predict(np_data, w))
+
+	f.write("id_" + repr(d) + "," + repr(dot_result) + "\n")
