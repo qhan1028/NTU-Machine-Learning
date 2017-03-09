@@ -14,7 +14,11 @@ with open(sys.argv[1], 'rb') as f:
 			line = [x.replace("NR", "0") for x in line]
 
 		line = [float(x) for x in line]
-		train.append(line)
+		if i < 18:
+			train.append(line)
+		else:
+			train[i % 18] += line
+		
 		i += 1
 
 test = []
@@ -29,31 +33,33 @@ with open(sys.argv[2], 'rb') as f:
 
 		line = [float(x) for x in line]
 		test.append(line)
+
 		i += 1
 
 np.set_printoptions(precision = 2, suppress = True)
 
 # define constants
 ITERATION = 1000
-TRAIN_SIZE = int(len(train) / 18)
-TEST_SIZE = int(len(test) / 18)
-ETA = 0.0001
+ETA = 0.000000005
+VALIDATION = 500
 
-HOURS_OF_DAY = 24
+MAX_TIME = int(len(train[0]))
 PERIOD = 9
 
-#SF = [9] # selected feature
-SF = range(18) # selected feature
+SF = [7, 8, 9, 16] # selected feature
+#SF = range(18) # selected feature
 NUM_FEATURE = len(SF)
-w = [ [0.0] * PERIOD + [0.0] ] * NUM_FEATURE # feature * (constant + period)
-w = np.random.random(np.shape(w)) - 0.5
-size_w = float(np.size(w))
+w = [ [0.3] * PERIOD ] * NUM_FEATURE # feature * (constant + period)
+b = 3.0#np.random.random()
+#w = np.random.random(np.shape(w))
+w = np.array(w)
 
 print("iteration =", ITERATION)
 print("eta =", ETA)
+print("validation =", VALIDATION)
 print("selected features =", SF)
-
-all_Ein = []
+print("w =", w)
+print("b =", b)
 
 def filter_data(SF, d):
 	
@@ -64,87 +70,83 @@ def filter_data(SF, d):
 	
 	return result
 
-def filter_hours(data, start):
+def filter_hours(data, start, period, selected_features):
 
 	result = []
-	for l in range(len(data)):
-	
-		# fetch data in period and add constant
-		result.append(data[l][start : start + PERIOD] + [1.0])
+	for f in selected_features:
+		result += [data[f][start : start + period]]
 	
 	return result
 
-def predict(data, w):
+def predict(X, w, b):
 	
-	mul = data * w
-	return np.sum(mul) / size_w
+	Y = np.sum(X * w) + b
+	return Y
 
 # train
+all_Ein = []
 for i in range(ITERATION):
 
 	if i % 100 == 0:
-		print("progress:", i/100, "%")
-		if i % 1000 == 0:
-			print(w.round(2))
+		print("progress:", i)
 	
 	iter_Ein = []
+	sum_gradient_X = np.zeros([NUM_FEATURE, PERIOD])
+	sum_gradient_b = 0.0
 
-	sum_gradient = np.zeros([NUM_FEATURE, PERIOD + 1])
-	for d in range(TRAIN_SIZE):
+	for start in range(MAX_TIME - PERIOD - 1)[VALIDATION:]:
 
-		data = filter_data(SF, d)
+		X = np.array( filter_hours(train, start, PERIOD, SF) )
+		yh = train[9][start + PERIOD]
 
-		this_Ein = []
-		for start in range(HOURS_OF_DAY - PERIOD - 1):
-			
-			fetch_data = filter_hours(data, start) # fetch hrs of data + constant
-			np_data = np.array(fetch_data) # convert into numpy object
+		sum_gradient_X += (-2.) * (yh - predict(X, w, b)) * X
+		sum_gradient_b += (-2.) * (yh - predict(X, w, b))
 
-			yh = train[d * 18 + 9][start + PERIOD] # pm2.5 right answer => y hat
-			# print("y hat=", yh)
-			
-			#sum_gradient += (-2.) * (yh - np.sum(np_data * w)/size_w ) * np_data
-			gradient = (-2.) * (yh - predict(np_data, w)) * np_data
-			w = w - ETA * gradient
+		Etrain = (yh - predict(X, w, b)) ** 2
+		iter_Ein.append(Etrain)
 
-			Ein = ( yh - predict(np_data, w)) ** 2
-			# print("Ein =", Ein)
-
-			this_Ein.append(Ein)
-
-		average_this_Ein = sum(this_Ein)/(HOURS_OF_DAY - PERIOD - 1)
-		# print("this_Ein =", average_this_Ein)	
-		iter_Ein.append(average_this_Ein)
-
-	# compute new w
-	# gradient = sum_gradient / float(TRAIN_SIZE * (HOURS_OF_DAY - PERIOD - 1))
-	# w = w - ETA * gradient
-	# print("w =", w.round(2))
 	current_Ein = np.mean(iter_Ein)
+	all_Ein.append(current_Ein)
+
+	# update parameters
+	w = w - ETA * sum_gradient_X
+	b = b - ETA * sum_gradient_b
+	
 	if i % 10 == 0:
-		print("current Ein = ", current_Ein)
+		print("current Ein =", np.sqrt(current_Ein))
 
-	if i > 0 and current_Ein >= all_Ein[-1]:
-		print("got minimum Ein =", all_Ein[-1])
-		print("break")
-		break
-	else:
-		all_Ein.append(current_Ein)
+# print result
+print("iteration =", ITERATION)
+print("eta =", ETA)
+print("validation num =", VALIDATION)
+print("selected features =", SF)
+print("average Ein = ", np.sqrt(np.mean(all_Ein)))
+print("w = \n", w)
+print("b =", b.round(4))
 
-print("final average Ein = ", np.mean(all_Ein))
-print("final w = \n", w.round(2))
+# validation
+Evalid = []
+for start in range(MAX_TIME - PERIOD - 1)[-VALIDATION:]:
+
+	X = np.array( filter_hours(train, start, PERIOD, SF) )
+	yh = train[9][start + PERIOD]
+
+	Ev = (yh - predict(X, w, b)) ** 2
+	Evalid.append(Ev)
+
+print("Evalid =", np.sqrt(np.mean(Evalid)))
+
 
 f = open(sys.argv[3], "w")
-
 f.write("id,value\n")
 # test
-for d in range(TEST_SIZE):
+for d in range(240):
 	
-	data = filter_data(SF, d)
+	test_data = filter_hours(test[ d*18 : d*18 + 18], 0, PERIOD, SF)
+	np_data = np.array(test_data)
 
-	fetch_data = filter_hours(data, 9 - PERIOD)
-	np_data = np.array(fetch_data)
-
-	dot_result = int(predict(np_data, w))
+	dot_result = int(predict(np_data, w, b))
+	if dot_result < 0:
+		dot_result = -1
 
 	f.write("id_" + repr(d) + "," + repr(dot_result) + "\n")
