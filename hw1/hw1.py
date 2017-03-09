@@ -38,15 +38,24 @@ with open(sys.argv[2], 'rb') as f:
 
 np.set_printoptions(precision = 2, suppress = True)
 
+def print_message():
+
+	print("iteration =", ITERATION)
+	print("eta =", ETA)
+	print("validation =", VALIDATION)
+	print("selected features =", SF)
+	print("w =\n", w)
+	print("b =", b)
+
 # define constants
-ITERATION = 1000
-ETA = 0.000000005
+ITERATION = 5000
+ETA = 0.00000002
 VALIDATION = 500
 
 MAX_TIME = int(len(train[0]))
 PERIOD = 9
 
-SF = [7, 8, 9, 16] # selected feature
+SF = [9] # selected feature
 #SF = range(18) # selected feature
 NUM_FEATURE = len(SF)
 w = [ [0.3] * PERIOD ] * NUM_FEATURE # feature * (constant + period)
@@ -54,12 +63,7 @@ b = 3.0#np.random.random()
 #w = np.random.random(np.shape(w))
 w = np.array(w)
 
-print("iteration =", ITERATION)
-print("eta =", ETA)
-print("validation =", VALIDATION)
-print("selected features =", SF)
-print("w =", w)
-print("b =", b)
+print_message()
 
 def filter_data(SF, d):
 	
@@ -115,14 +119,12 @@ for i in range(ITERATION):
 	if i % 10 == 0:
 		print("current Ein =", np.sqrt(current_Ein))
 
+average_Ein = np.sqrt(np.mean(all_Ein))
+
 # print result
-print("iteration =", ITERATION)
-print("eta =", ETA)
-print("validation num =", VALIDATION)
-print("selected features =", SF)
-print("average Ein = ", np.sqrt(np.mean(all_Ein)))
-print("w = \n", w)
-print("b =", b.round(4))
+print_message()
+print("average Ein = ", average_Ein)
+
 
 # validation
 Evalid = []
@@ -134,19 +136,27 @@ for start in range(MAX_TIME - PERIOD - 1)[-VALIDATION:]:
 	Ev = (yh - predict(X, w, b)) ** 2
 	Evalid.append(Ev)
 
-print("Evalid =", np.sqrt(np.mean(Evalid)))
+Ev = np.sqrt(np.mean(Evalid))
+print("Evalid =", Ev)
 
 
+# test
 f = open(sys.argv[3], "w")
 f.write("id,value\n")
-# test
 for d in range(240):
 	
 	test_data = filter_hours(test[ d*18 : d*18 + 18], 0, PERIOD, SF)
 	np_data = np.array(test_data)
 
 	dot_result = int(predict(np_data, w, b))
-	if dot_result < 0:
-		dot_result = -1
-
 	f.write("id_" + repr(d) + "," + repr(dot_result) + "\n")
+
+f.write("\niter = " + repr(ITERATION) + "\n")
+f.write("eta = " + repr(ETA) + "\n")
+f.write("val num = " + repr(VALIDATION) + "\n")
+f.write("feature = " + repr(SF) + "\n")
+f.write("i = " + repr(average_Ein) + "\n")
+f.write("w = \n" + repr(w) + "\n")
+f.write("b = " + repr(b) + "\n")
+f.write("Ev = " + repr(Ev) + "\n")
+f.close()
