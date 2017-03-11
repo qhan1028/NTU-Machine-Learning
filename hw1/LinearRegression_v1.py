@@ -1,10 +1,13 @@
 # ML 2017 hw1 
+# Linear Regression with Gradient Descent, version 1
+# Validation (Ev)
+
 import numpy as np
-import sys
+from sys import argv
 
 # read from csv and trim all chinese words
 train = []
-with open(sys.argv[1], 'rb') as f:
+with open(argv[1], 'rb') as f:
 	data = f.read().splitlines()
 	i = 0
 	for line in data[1:]: # trim the first data which is header
@@ -22,7 +25,7 @@ with open(sys.argv[1], 'rb') as f:
 		i += 1
 
 test = []
-with open(sys.argv[2], 'rb') as f:
+with open(argv[2], 'rb') as f:
 	data = f.read().splitlines()
 	i = 0
 	for line in data: # trim the first data which is header
@@ -39,43 +42,39 @@ with open(sys.argv[2], 'rb') as f:
 np.set_printoptions(precision = 2, suppress = True)
 
 def print_message():
-
 	print("iteration =", ITERATION)
 	print("eta =", ETA)
 	print("validation =", VALIDATION)
-	print("selected features =", SF)
+	print("selected features =", FEATURE)
 	print("w =\n", w)
 	print("b =", b)
 
 # define constants
-ITERATION = 5000
-ETA = 0.00000002
-VALIDATION = 500
+ITERATION = 10000
+ETA = 1e-8
+VALIDATION = 0
 
 MAX_TIME = int(len(train[0]))
-PERIOD = 9
+PERIOD = 7
 
-SF = [9] # selected feature
-#SF = range(18) # selected feature
-NUM_FEATURE = len(SF)
-w = [ [0.3] * PERIOD ] * NUM_FEATURE # feature * (constant + period)
-b = 3.0#np.random.random()
-#w = np.random.random(np.shape(w))
-w = np.array(w)
+FEATURE = [5, 9, 12] # selected feature
+NUM_FEATURE = len(FEATURE)
+#w = np.array([[0.01] * PERIOD] * NUM_FEATURE) # feature * period
+w = np.array([[-0.02, -0.04, 0.01, -0.02, 0.02, 0.01, -0.04, -0.03, 0.2], [-0.02, -0.02, 0.2, -0.21, -0.04, 0.49, -0.54, 0.01, 1.03], [-0.2, 0.11, -0.06, -0.09, -0.03, 0.0, -0.06, 0.12, 0.31]])
+#b = 0.959 # bias
+b = 1.0
 
 print_message()
 
-def filter_data(SF, d):
-	
+def filter_data(FEATURE, d):
 	result = []
-	for sf in SF:
+	for sf in FEATURE:
 		
 		result.append(train[d * 18 + sf])
 	
 	return result
 
 def filter_hours(data, start, period, selected_features):
-
 	result = []
 	for f in selected_features:
 		result += [data[f][start : start + period]]
@@ -83,14 +82,12 @@ def filter_hours(data, start, period, selected_features):
 	return result
 
 def predict(X, w, b):
-	
 	Y = np.sum(X * w) + b
 	return Y
 
 # train
 all_Ein = []
 for i in range(ITERATION):
-
 	if i % 100 == 0:
 		print("progress:", i)
 	
@@ -100,7 +97,7 @@ for i in range(ITERATION):
 
 	for start in range(MAX_TIME - PERIOD - 1)[VALIDATION:]:
 
-		X = np.array( filter_hours(train, start, PERIOD, SF) )
+		X = np.array( filter_hours(train, start, PERIOD, FEATURE) )
 		yh = train[9][start + PERIOD]
 
 		sum_gradient_X += (-2.) * (yh - predict(X, w, b)) * X
@@ -111,13 +108,12 @@ for i in range(ITERATION):
 
 	current_Ein = np.mean(iter_Ein)
 	all_Ein.append(current_Ein)
+	if i % 10 == 0:
+		print("current Ein =", np.sqrt(current_Ein))
 
 	# update parameters
 	w = w - ETA * sum_gradient_X
-	b = b - ETA * sum_gradient_b
-	
-	if i % 10 == 0:
-		print("current Ein =", np.sqrt(current_Ein))
+	b = b - ETA * sum_gradient_b	
 
 average_Ein = np.sqrt(np.mean(all_Ein))
 
@@ -125,38 +121,24 @@ average_Ein = np.sqrt(np.mean(all_Ein))
 print_message()
 print("average Ein = ", average_Ein)
 
-
 # validation
 Evalid = []
-for start in range(MAX_TIME - PERIOD - 1)[-VALIDATION:]:
-
-	X = np.array( filter_hours(train, start, PERIOD, SF) )
+for start in range(MAX_TIME - PERIOD - 1)[:VALIDATION]:
+	X = np.array( filter_hours(train, start, PERIOD, FEATURE))
 	yh = train[9][start + PERIOD]
 
 	Ev = (yh - predict(X, w, b)) ** 2
 	Evalid.append(Ev)
-
-Ev = np.sqrt(np.mean(Evalid))
-print("Evalid =", Ev)
-
+if VALIDATION:
+	print("Evalid =", np.sqrt(np.mean(Evalid)))
 
 # test
-f = open(sys.argv[3], "w")
-f.write("id,value\n")
-for d in range(240):
-	
-	test_data = filter_hours(test[ d*18 : d*18 + 18], 0, PERIOD, SF)
-	np_data = np.array(test_data)
+with open(argv[3], "w") as f:
+	f.write("id,value\n")
+	for d in range(240):
+		
+		test_data = filter_hours(test[ d*18 : d*18 + 18], 9-PERIOD, PERIOD, FEATURE)
+		np_data = np.array(test_data)
 
-	dot_result = int(predict(np_data, w, b))
-	f.write("id_" + repr(d) + "," + repr(dot_result) + "\n")
-
-f.write("\niter = " + repr(ITERATION) + "\n")
-f.write("eta = " + repr(ETA) + "\n")
-f.write("val num = " + repr(VALIDATION) + "\n")
-f.write("feature = " + repr(SF) + "\n")
-f.write("i = " + repr(average_Ein) + "\n")
-f.write("w = \n" + repr(w) + "\n")
-f.write("b = " + repr(b) + "\n")
-f.write("Ev = " + repr(Ev) + "\n")
-f.close()
+		dot_result = int(predict(np_data, w, b))
+		f.write("id_" + repr(d) + "," + repr(dot_result) + "\n")
