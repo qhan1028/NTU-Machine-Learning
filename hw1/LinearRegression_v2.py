@@ -15,17 +15,17 @@ test = []
 
 # default parameters
 ITERATION = 10000
-ETA = 1e-8
+ETA = 8e-10
 VALIDATION = 0 # validation size
 
-SGD = 1
+SGD = 0
 BATCH = 1000
 
 PERIOD = 7
 MAX_TIME = 0
 
 #FEATURE = range(18)
-FEATURE = [5, 9, 11] # selected feature
+FEATURE = [5, 9, 12, 15] # selected feature
 NUM_FEATURE = len(FEATURE)
 
 # default starting point
