@@ -2,7 +2,7 @@ iteration,10000
 eta,5e-09
 period,7
 sgd,0
-batch,50
+batch,500
 feature,5,9,12,
 average Ein,6.2126019431877992
 final Ein,6.0876778711861874
