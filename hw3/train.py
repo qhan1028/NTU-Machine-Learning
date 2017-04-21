@@ -24,7 +24,7 @@ DENSE2 = 7
 BATCH = 100
 EPOCHS = 10
 
-AUGMENT = 1
+AUGMENT = 2
 
 def read_file(filename):
 
@@ -53,28 +53,34 @@ def main():
 	print("construct model...")
 	S = 48
 	model = Sequential()
-	model.add(Conv2D(64, (3, 3), input_shape = (S, S, 1)))
+	model.add(Conv2D(128, (5, 5), input_shape = (S, S, 1)))
 	model.add(MaxPooling2D((2, 2)))
-	model.add(Conv2D(32, (3, 3)))
+	model.add(Conv2D(64, (5, 5), input_shape = (S, S, 1)))
 	model.add(MaxPooling2D((2, 2)))
-	model.add(Conv2D(16, (3, 3)))
+	model.add(Conv2D(32, (5, 5), input_shape = (S, S, 1)))
 	model.add(MaxPooling2D((2, 2)))
 	model.add(Flatten())
-	model.add(Dense(units = 50, activation='relu'))
+	model.add(Dense(units = 100, activation='relu'))
 	model.add(Dense(units = 7, activation='softmax'))
 	model.summary()
 
 	print("compile model...")
 	model.compile(loss='categorical_crossentropy',optimizer="adam",metrics=['accuracy'])
 
-	if AUGMENT: 
+	if AUGMENT == 1: 
 		print("train with augmented data...")
 		datagen = ImageDataGenerator(vertical_flip = False, horizontal_flip = True)
 		datagen.fit(X)
-		model.fit_generator(datagen.flow(X, Y, batch_size=32), samples_per_epoch=len(X), epochs=10, verbose=1, \
-												validation_data=(X[:1000], Y[:1000]))
+		model.fit_generator(datagen.flow(X, Y, batch_size=32), samples_per_epoch=len(X), epochs=5, verbose=1, \
+												validation_data=(X[:100], Y[:100]))
+	elif AUGMENT == 2:
+		print("train with self-augmented data...")
+		X_flip = np.flip(X, 2)
+		X_all = np.concatenate((X, X_flip), 0)
+		Y_all = np.concatenate((Y, Y), 0)
+		model.fit(X_all, Y_all, batch_size=BATCH, epochs=EPOCHS, verbose=1, validation_split=0.1)
 	else:
-		print("train...")
+		print("train with raw data...")
 		model.fit(X, Y, batch_size=BATCH, epochs=EPOCHS, verbose=1, validation_split=0.1)
 	
 	print("evaluate train (val)...")
