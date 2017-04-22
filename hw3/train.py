@@ -3,28 +3,25 @@
 import numpy as np
 import csv
 from sys import argv
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation
 from keras.layers import Conv2D, MaxPooling2D, Flatten
 from keras.optimizers import SGD, Adam
 from keras.utils import np_utils
 from keras.preprocessing.image import ImageDataGenerator
+from keras.callbacks import EarlyStopping
 
 np.set_printoptions(precision = 6, suppress = True)
 
 SHAPE = 48
 CATEGORY = 7
 
-BOX = 5
-BOX_NUM = 25
-POOLING = 2
-DENSE1 = 100
-DENSE2 = 7
-
 BATCH = 100
-EPOCHS = 10
+EPOCHS = 50
 
-AUGMENT = 2
+AUGMENT = 1
 
 def read_file(filename):
 
@@ -45,48 +42,52 @@ def main():
 
 	print("reshape data...")
 	X = X.reshape(X.shape[0], SHAPE, SHAPE, 1)
-	X_val = X[20000:]
-	Y_val = Y[20000:]
-	X = X[:20000]
-	Y = Y[:20000]
 
 	print("construct model...")
-	S = 48
 	model = Sequential()
-	model.add(Conv2D(128, (5, 5), input_shape = (S, S, 1)))
+	model.add(Conv2D(32, (3, 3), input_shape = (48, 48, 1)))
+	model.add(Conv2D(48, (3, 3), input_shape = (48, 48, 1)))
 	model.add(MaxPooling2D((2, 2)))
-	model.add(Conv2D(64, (5, 5), input_shape = (S, S, 1)))
+	model.add(Conv2D(64, (3, 3)))
+	model.add(Conv2D(96, (3, 3)))
 	model.add(MaxPooling2D((2, 2)))
-	model.add(Conv2D(32, (5, 5), input_shape = (S, S, 1)))
-	model.add(MaxPooling2D((2, 2)))
+	model.add(Conv2D(128, (3, 3)))
 	model.add(Flatten())
-	model.add(Dense(units = 100, activation='relu'))
+	model.add(Dense(units = 256, activation='relu'))
+	model.add(Dropout(rate=0.2))
 	model.add(Dense(units = 7, activation='softmax'))
 	model.summary()
 
 	print("compile model...")
 	model.compile(loss='categorical_crossentropy',optimizer="adam",metrics=['accuracy'])
 
+	earlyStopping = EarlyStopping(monitor='val_acc', patience=5, verbose=1, mode='auto')
+
+	score = [0]
 	if AUGMENT == 1: 
 		print("train with augmented data...")
-		datagen = ImageDataGenerator(vertical_flip = False, horizontal_flip = True)
+		datagen = ImageDataGenerator(vertical_flip=False, horizontal_flip=True, \
+																 height_shift_range=0.1, width_shift_range=0.1)
 		datagen.fit(X)
-		model.fit_generator(datagen.flow(X, Y, batch_size=32), samples_per_epoch=len(X), epochs=5, verbose=1, \
-												validation_data=(X[:100], Y[:100]))
+		history = model.fit_generator(datagen.flow(X, Y, batch_size=BATCH), samples_per_epoch=len(X), \
+																	epochs=EPOCHS, verbose=1, validation_data=(X, Y))
+		score.append(round(history.history['val_acc'][-1], 6))
+		print("train accuracy (last) = " + repr(score[1]))
 	elif AUGMENT == 2:
 		print("train with self-augmented data...")
 		X_flip = np.flip(X, 2)
 		X_all = np.concatenate((X, X_flip), 0)
 		Y_all = np.concatenate((Y, Y), 0)
-		model.fit(X_all, Y_all, batch_size=BATCH, epochs=EPOCHS, verbose=1, validation_split=0.1)
+		model.fit(X_all, Y_all, batch_size=BATCH, epochs=EPOCHS, verbose=1, validation_split=0.1, callbacks=[earlyStopping])
+		print("evaluate train...")
+		score = model.evaluate(X_all, Y_all)
+		print("train accuracy (all) = " + repr(score[1]))
 	else:
 		print("train with raw data...")
-		model.fit(X, Y, batch_size=BATCH, epochs=EPOCHS, verbose=1, validation_split=0.1)
-	
-	print("evaluate train (val)...")
-	score = model.evaluate(X_val, Y_val)
-
-	print("train accuracy = " + repr(score[1]))
+		model.fit(X, Y, batch_size=BATCH, epochs=EPOCHS, verbose=1, validation_split=0.1, callbacks=[earlyStopping])
+		print("evaluate train...")
+		score = model.evaluate(X, Y)
+		print("train accuracy (all) = " + repr(score[1]))
 
 	print("save model...")
 	model.save("{:.6f}".format(round(score[1], 6)) + ".h5")
