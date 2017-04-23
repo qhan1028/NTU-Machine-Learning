@@ -28,6 +28,7 @@ def write_file(filename, result):
 			predict = np.argmax(result[i])
 			f.write(repr(i) + "," + repr(predict) + "\n")
 
+# argv: 1: test.csv 2: predict.csv 3: model.h5
 def main():
 	
 	print("read test data...")
@@ -41,7 +42,7 @@ def main():
 	model = load_model(argv[3])
 
 	print("predict...")
-	result = model.predict(data, batch_size = 100, verbose = 1)
+	result = model.predict(data, batch_size = 128, verbose = 1)
 
 	print("output result...")
 	write_file(argv[2], result)

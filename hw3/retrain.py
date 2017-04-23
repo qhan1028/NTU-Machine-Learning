@@ -19,7 +19,7 @@ SHAPE = 48
 CATEGORY = 7
 
 BATCH = 100
-EPOCHS = 50
+EPOCHS = 100
 
 AUGMENT = 1
 
@@ -34,6 +34,7 @@ def read_file(filename):
 
 	return np.array(X), np_utils.to_categorical(Y, 7), len(X), len(Y)
 
+# argv: 1: train.csv 2: model.h5 3: start_epoch 4: end_epoch
 def main():
 	
 	print("read data...")
@@ -45,38 +46,31 @@ def main():
 
 	print("load model and next epoch...")
 	model = load_model(argv[2])
-	next_epoch = int(argv[3])
-
-	earlyStopping = EarlyStopping(monitor='val_acc', patience=5, verbose=1, mode='auto')
+	start_epoch = int(argv[3])
+	end_epoch = int(argv[4])
 
 	score = [0]
 	if AUGMENT == 1: 
 		print("train with augmented data...")
 		datagen = ImageDataGenerator(vertical_flip=False, horizontal_flip=True, \
 																 height_shift_range=0.1, width_shift_range=0.1)
-		datagen.fit(X)
-		history = model.fit_generator(datagen.flow(X, Y, batch_size=BATCH), samples_per_epoch=len(X), \
-																	epochs=EPOCHS, verbose=1, validation_data=(X[::10], Y[::10]), initial_epoch=next_epoch)
+		Xv = X[:2400]
+		Yv = Y[:2400]
+		datagen.fit(X[2400:], seed=1028)
+		history = model.fit_generator(datagen.flow(X[2400:], Y[2400:], batch_size=BATCH), samples_per_epoch=len(X), \
+																	epochs=end_epoch, verbose=1, validation_data=(Xv, Yv), initial_epoch=start_epoch, seed=1028)
 		score.append(round(history.history['val_acc'][-1], 6))
-		print("train accuracy (last) = " + repr(score[1]))
-	elif AUGMENT == 2:
-		print("train with self-augmented data...")
-		X_flip = np.flip(X, 2)
-		X_all = np.concatenate((X, X_flip), 0)
-		Y_all = np.concatenate((Y, Y), 0)
-		model.fit(X_all, Y_all, batch_size=BATCH, epochs=EPOCHS, verbose=1, validation_split=0.1, callbacks=[earlyStopping])
-		print("evaluate train...")
-		score = model.evaluate(X_all, Y_all)
-		print("train accuracy (all) = " + repr(score[1]))
+		print("train accuracy (last val) = " + repr(score[1]))
 	else:
 		print("train with raw data...")
+		earlyStopping = EarlyStopping(monitor='val_acc', patience=5, verbose=1, mode='auto')
 		model.fit(X, Y, batch_size=BATCH, epochs=EPOCHS, verbose=1, validation_split=0.1, callbacks=[earlyStopping])
 		print("evaluate train...")
 		score = model.evaluate(X, Y)
 		print("train accuracy (all) = " + repr(score[1]))
 
 	print("save model...")
-	model.save("{:.6f}".format(round(score[1], 6)) + ".h5")
+	model.save("{:.6f}".format(round(score[1], 6)) + "_" + argv[2])
 
 
 if __name__ == '__main__':
