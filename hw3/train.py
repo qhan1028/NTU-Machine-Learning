@@ -18,8 +18,8 @@ np.set_printoptions(precision = 6, suppress = True)
 SHAPE = 48
 CATEGORY = 7
 
-BATCH = 100
-EPOCHS = 50
+BATCH = 128
+EPOCHS = 40
 
 AUGMENT = 1
 
@@ -45,15 +45,15 @@ def main():
 
 	print("construct model...")
 	model = Sequential()
-	model.add(Conv2D(32, (3, 3), input_shape = (48, 48, 1)))
-	model.add(Conv2D(48, (3, 3), input_shape = (48, 48, 1)))
-	model.add(MaxPooling2D((2, 2)))
-	model.add(Conv2D(64, (3, 3)))
+	model.add(Conv2D(64, (3, 3), input_shape = (48, 48, 1)))
 	model.add(Conv2D(96, (3, 3)))
 	model.add(MaxPooling2D((2, 2)))
 	model.add(Conv2D(128, (3, 3)))
+	model.add(Conv2D(192, (3, 3)))
+	model.add(Conv2D(256, (3, 3)))
+	model.add(MaxPooling2D((2, 2)))
 	model.add(Flatten())
-	model.add(Dense(units = 256, activation='relu'))
+	model.add(Dense(units = 512, activation='relu'))
 	model.add(Dropout(rate=0.2))
 	model.add(Dense(units = 7, activation='softmax'))
 	model.summary()
@@ -67,10 +67,11 @@ def main():
 	if AUGMENT == 1: 
 		print("train with augmented data...")
 		datagen = ImageDataGenerator(vertical_flip=False, horizontal_flip=True, \
-																 height_shift_range=0.1, width_shift_range=0.1)
+																 height_shift_range=0.1, width_shift_range=0.1, \
+																 rotation_range=5)
 		datagen.fit(X)
 		history = model.fit_generator(datagen.flow(X, Y, batch_size=BATCH), samples_per_epoch=len(X), \
-																	epochs=EPOCHS, verbose=1, validation_data=(X, Y))
+																	epochs=EPOCHS, verbose=1, validation_data=(X[::10], Y[::10]))
 		score.append(round(history.history['val_acc'][-1], 6))
 		print("train accuracy (last) = " + repr(score[1]))
 	elif AUGMENT == 2:
