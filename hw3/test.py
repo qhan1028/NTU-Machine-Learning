@@ -9,15 +9,18 @@ from keras.models import load_model
 
 np.set_printoptions(precision = 6, suppress = True)
 
-def read_file(filename):
+def read_test(filename):
 
 	data = []
 	with open(filename, "r", encoding="big5") as f:
-
+		count = 0
 		for line in list(csv.reader(f))[1:]:
 			data.append( [float(x) for x in line[1].split()] )
+			count += 1
+			print("\rX_test: " + repr(count), end="", flush=True)
+		print("", flush=True)
 
-	return np.array(data), len(data)
+	return np.array(data)
 
 def write_file(filename, result):
 
@@ -28,11 +31,11 @@ def write_file(filename, result):
 			predict = np.argmax(result[i])
 			f.write(repr(i) + "," + repr(predict) + "\n")
 
-# argv: 1: test.csv 2: predict.csv 3: model.h5
+# argv: [1]test.csv [2]predict.csv [3]model.h5
 def main():
 	
 	print("read test data...")
-	data, data_len = read_file(argv[1])
+	data = read_test(argv[1])
 
 	print("reshape test data...")
 	data = data / 255
