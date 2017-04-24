@@ -5,7 +5,7 @@ import csv
 from sys import argv
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers.core import Dense, Dropout, Activation
 from keras.layers import Conv2D, MaxPooling2D, Flatten
 from keras.optimizers import SGD, Adam
@@ -27,27 +27,61 @@ def read_train(filename):
 
 	X, Y = [], []
 	with open(filename, "r", encoding="big5") as f:
-		count = 0
+
 		for line in list(csv.reader(f))[1:]:
 			Y.append( float(line[0]) )
 			X.append( [float(x) for x in line[1].split()] )
-			count += 1
-			print("\rX_train: " + repr(count), end="", flush=True)
-		print("", flush=True)
 
 	return np.array(X), np_utils.to_categorical(Y, CATEGORY)
 
-# argv: [1]train.csv
+def read_test(filename):
+
+	data = []
+	with open(filename, "r", encoding="big5") as f:
+
+		for line in list(csv.reader(f))[1:]:
+			data.append( [float(x) for x in line[1].split()] )
+
+	return np.array(data)
+
+def semi_data(X_test, result):
+	
+	X, Y = [], []
+	for i in range(len(result)):
+		p = np.max(result[i])
+		idx = np.argmax(result[i])
+		if p >= 0.8:
+			X.append(X_test[i])
+			Y.append(idx)
+	
+	return np.array(X), np_utils.to_categorical(Y, CATEGORY)
+
+# argv: 1: train.csv 2: test.csv 3: model.h5
 def main():
 	
 	print("read train data...")
-	X, Y = read_train(argv[1])
-	X = X/255
+	X_train, Y_train = read_train(argv[1])
+	X_train = X_train/255
+
+	print("read test data...")
+	X_test = read_test(argv[2])
+	X_test = X_test/255
 
 	print("reshape data...")
-	X = X.reshape(X.shape[0], SHAPE, SHAPE, 1)
+	X_train = X_train.reshape(X_train.shape[0], SHAPE, SHAPE, 1)
+	X_test = X_test.reshape(X_test.shape[0], SHAPE, SHAPE, 1)
 
-	print("construct model...")
+	print("load model...")
+	old_model = load_model(argv[3])
+
+	print("predict test data...")
+	result = old_model.predict(X_test, batch_size=128, verbose=1)
+	X_semi, Y_semi = semi_data(X_test, result)
+
+	X = np.concatenate((X_train, X_semi), 0)
+	Y = np.concatenate((Y_train, Y_semi), 0)
+
+	print("construct new model...")
 	model = Sequential()
 	model.add(Conv2D(32, (3, 3), input_shape = (48, 48, 1)))
 	model.add(Conv2D(48, (3, 3)))
@@ -65,8 +99,6 @@ def main():
 	print("compile model...")
 	model.compile(loss='categorical_crossentropy',optimizer="adam",metrics=['accuracy'])
 
-	earlyStopping = EarlyStopping(monitor='val_acc', patience=5, verbose=1, mode='auto')
-
 	score = [0]
 	if AUGMENT == 1: 
 		print("train with augmented data...")
@@ -75,28 +107,20 @@ def main():
 		Xv = X[:2400]
 		Yv = Y[:2400]
 		datagen.fit(X[2400:], seed=1028)
-		history = model.fit_generator(datagen.flow(X[2400:], Y[2400:], batch_size=BATCH), samples_per_epoch=len(X), \
-																	epochs=EPOCHS, verbose=1, validation_data=(Xv, Yv), seed=1028)
+		history = model.fit_generator(datagen.flow(X[2400:], Y[2400:], batch_size=BATCH, seed=1028), samples_per_epoch=len(X), \
+																	epochs=EPOCHS, verbose=1, validation_data=(Xv, Yv))
 		score.append(round(history.history['val_acc'][-1], 6))
-		print("train accuracy (last) = " + repr(score[1]))
-	elif AUGMENT == 2:
-		print("train with self-augmented data...")
-		X_flip = np.flip(X, 2)
-		X_all = np.concatenate((X, X_flip), 0)
-		Y_all = np.concatenate((Y, Y), 0)
-		model.fit(X_all, Y_all, batch_size=BATCH, epochs=EPOCHS, verbose=1, validation_split=0.1, callbacks=[earlyStopping])
-		print("evaluate train...")
-		score = model.evaluate(X_all, Y_all)
-		print("train accuracy (all) = " + repr(score[1]))
+		print("train accuracy (last val) = " + repr(score[1]))
 	else:
 		print("train with raw data...")
+		earlyStopping = EarlyStopping(monitor='val_acc', patience=5, verbose=1, mode='auto')
 		model.fit(X, Y, batch_size=BATCH, epochs=EPOCHS, verbose=1, validation_split=0.1, callbacks=[earlyStopping])
 		print("evaluate train...")
 		score = model.evaluate(X, Y)
 		print("train accuracy (all) = " + repr(score[1]))
 
-	print("save model...")
-	model.save("{:.6f}".format(round(score[1], 6)) + ".h5")
+	print("save new model...")
+	model.save("semi_" + "{:.6f}".format(round(score[1], 6)) + "_" + argv[3])
 
 
 if __name__ == '__main__':
