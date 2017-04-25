@@ -3,6 +3,8 @@
 import numpy as np
 import csv
 from sys import argv
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 from keras.utils import np_utils
 
 SHAPE = 48

@@ -8,6 +8,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 from keras.models import Sequential, load_model
 from keras.layers.core import Dense, Dropout, Activation
 from keras.layers import Conv2D, MaxPooling2D, Flatten
+from keras.layers.normalization import BatchNormalization
 from keras.optimizers import SGD, Adam
 from keras.utils import np_utils
 from keras.preprocessing.image import ImageDataGenerator
@@ -18,9 +19,8 @@ np.set_printoptions(precision = 6, suppress = True)
 SHAPE = 48
 CATEGORY = 7
 
-BATCH = 128
-EPOCHS = 50
 
+READ_FROM_NPZ = 1
 AUGMENT = 1
 
 SEMI_THRES = 0.5
@@ -67,16 +67,23 @@ def semi_data(X_test, result):
 # argv: [1]train.csv [2]test.csv [3]model.h5
 def main():
 	
-	print("read train data...")
-	X_train, Y_train = read_train(argv[1])
-	X_train = X_train/255
-
-	print("read test data...")
-	X_test = read_test(argv[2])
-	X_test = X_test/255
+	X_train, Y_train, X_test = [], [], []
+	if READ_FROM_NPZ:
+		print("read from npz...")
+		data = np.load("data.npz")
+		X_train = data['arr_0']
+		Y_train = data['arr_1']
+		X_test = data['arr_2']
+	else:
+		print("read train data...")
+		X_train, Y_train = read_train(argv[1])
+		print("read test data...")
+		X_test = read_test(argv[2])
 
 	print("reshape data...")
+	X_train = X_train/255
 	X_train = X_train.reshape(X_train.shape[0], SHAPE, SHAPE, 1)
+	X_test = X_test/255
 	X_test = X_test.reshape(X_test.shape[0], SHAPE, SHAPE, 1)
 
 	print("load model...")
@@ -93,30 +100,51 @@ def main():
 	print("construct new model...")
 	model = Sequential()
 	model.add(Conv2D(32, (3, 3), input_shape=(48, 48, 1), activation='relu', padding='same'))
+	model.add(BatchNormalization(axis=-1))
 	model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
+	model.add(BatchNormalization(axis=-1))
+	model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
+	model.add(BatchNormalization(axis=-1))
 	model.add(MaxPooling2D((2, 2)))
+
 	model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
+	model.add(BatchNormalization(axis=-1))
 	model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
+	model.add(BatchNormalization(axis=-1))
+	model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
+	model.add(BatchNormalization(axis=-1))
 	model.add(MaxPooling2D((2, 2)))
+
 	model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
+	model.add(BatchNormalization(axis=-1))
+	model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
+	model.add(BatchNormalization(axis=-1))
+	model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
+	model.add(BatchNormalization(axis=-1))
+	model.add(MaxPooling2D((2, 2)))
 	model.add(Flatten())
+	
 	model.add(Dense(units = 256, activation='relu'))
-	model.add(Dropout(rate=0.2))
+	model.add(Dense(units = 128, activation='relu'))
+	model.add(Dense(units = 64, activation='relu'))
 	model.add(Dense(units = 7, activation='softmax'))
 	model.summary()
 
 	print("compile new model...")
 	model.compile(loss='categorical_crossentropy',optimizer="adam",metrics=['accuracy'])
 
+	VAL = 2400
+	BATCH = 128
+	EPOCHS = 20
 	score = [0]
 	if AUGMENT == 1: 
 		print("train with augmented data...")
 		datagen = ImageDataGenerator(vertical_flip=False, horizontal_flip=True, \
 																 height_shift_range=0.1, width_shift_range=0.1)
-		Xv = X[:2400]
-		Yv = Y[:2400]
-		datagen.fit(X[2400:], seed=1028)
-		history = model.fit_generator(datagen.flow(X[2400:], Y[2400:], batch_size=BATCH, seed=1028), samples_per_epoch=len(X), \
+		Xv = X[:VAL]
+		Yv = Y[:VAL]
+		datagen.fit(X[VAL:], seed=1028)
+		history = model.fit_generator(datagen.flow(X[VAL:], Y[VAL:], batch_size=BATCH, seed=1028), samples_per_epoch=len(X), \
 																	epochs=EPOCHS, verbose=1, validation_data=(Xv, Yv))
 		score.append(round(history.history['val_acc'][-1], 6))
 		print("train accuracy (last val) = " + repr(score[1]))
