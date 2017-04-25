@@ -10,7 +10,7 @@ from numpy.linalg import *
 NUM_FEATURE = 106
 OTHER_FEATURE = 1
 
-ITERATION = 200
+ITERATION = 500
 ETA = 1e-4
 ADAGRAD = 0
 
@@ -41,11 +41,12 @@ def read_Y(n):
 
 def alter_feature(X):
 	global NUM_FEATURE
-	X1 = X[:, [0]] * X[:, [0]]
+	X1 = X[:, [0]] ** 2
 	X2 = X[:, [0]] * X[:, [5]]
-	NUM_FEATURE += 2
+	X3 = X[:, [0]] - X[:, [5]]
+	NUM_FEATURE += 3
 	index = list(range(106, NUM_FEATURE))
-	return np.concatenate((X, X1, X2), axis = 1), index
+	return np.concatenate((X, X1, X2, X3), axis = 1), index
 
 def sigmoid(z):
 	if not NORMALIZE: # z fix
