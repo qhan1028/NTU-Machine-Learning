@@ -18,9 +18,7 @@ np.set_printoptions(precision = 6, suppress = True)
 SHAPE = 48
 CATEGORY = 7
 
-BATCH = 128
-EPOCHS = 100
-
+READ_FROM_NPZ = 1
 AUGMENT = 1
 
 SEMI_THRES = 0.5
@@ -67,16 +65,23 @@ def semi_data(X_test, result):
 # argv: [1]train.csv [2]test.csv [3]old_model.h5 [4]semi_model.h5 [5]start_epoch [6]end_epoch
 def main():
 	
-	print("read train data...")
-	X_train, Y_train = read_train(argv[1])
-	X_train = X_train/255
-
-	print("read test data...")
-	X_test = read_test(argv[2])
-	X_test = X_test/255
+	X_train, Y_train, X_test = [], [], []
+	if READ_FROM_NPZ:
+		print("read from npz...")
+		data = np.load("data.npz")
+		X_train = data['arr_0']
+		Y_train = data['arr_1']
+		X_test = data['arr_2']
+	else:
+		print("read train data...")
+		X_train, Y_train = read_train(argv[1])
+		print("read test data...")
+		X_test = read_test(argv[2])
 
 	print("reshape data...")
+	X_train = X_train/255
 	X_train = X_train.reshape(X_train.shape[0], SHAPE, SHAPE, 1)
+	X_test = X_test/255
 	X_test = X_test.reshape(X_test.shape[0], SHAPE, SHAPE, 1)
 
 	print("load original model...")
@@ -96,15 +101,18 @@ def main():
 	start_epoch = int(argv[5])
 	end_epoch = int(argv[6])
 
+	VAL = 2400
+	BATCH = 128
+	EPOCHS = 100
 	score = [0]
 	if AUGMENT == 1: 
 		print("train with augmented data...")
 		datagen = ImageDataGenerator(vertical_flip=False, horizontal_flip=True, \
 																 height_shift_range=0.1, width_shift_range=0.1)
-		Xv = X[:2400]
-		Yv = Y[:2400]
-		datagen.fit(X[2400:], seed=1028)
-		history = semi_model.fit_generator(datagen.flow(X[2400:], Y[2400:], batch_size=BATCH, seed=1028), samples_per_epoch=len(X), \
+		Xv = X[:VAL]
+		Yv = Y[:VAL]
+		datagen.fit(X[VAL:], seed=1028)
+		history = semi_model.fit_generator(datagen.flow(X[VAL:], Y[VAL:], batch_size=BATCH, seed=1028), samples_per_epoch=len(X), \
 																	epochs=end_epoch, verbose=1, validation_data=(Xv, Yv), initial_epoch=start_epoch)
 		score.append(round(history.history['val_acc'][-1], 6))
 		print("train accuracy (last val) = " + repr(score[1]))

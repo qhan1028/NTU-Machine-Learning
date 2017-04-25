@@ -18,9 +18,7 @@ np.set_printoptions(precision = 6, suppress = True)
 SHAPE = 48
 CATEGORY = 7
 
-BATCH = 100
-EPOCHS = 100
-
+READ_FROM_NPZ = 1
 AUGMENT = 1
 
 def read_train(filename):
@@ -40,11 +38,18 @@ def read_train(filename):
 # argv: 1: train.csv 2: model.h5 3: start_epoch 4: end_epoch
 def main():
 	
-	print("read train data...")
-	X, Y = read_train(argv[1])
-	X = X/255
+	X, Y = [], []
+	if READ_FROM_NPZ:
+		print("read from npz...")
+		data = np.load("data.npz")
+		X = data['arr_0']
+		Y = data['arr_1']
+	else:
+		print("read train data...")
+		X, Y = read_train(argv[1])
 
 	print("reshape data...")
+	X = X/255
 	X = X.reshape(X.shape[0], SHAPE, SHAPE, 1)
 
 	print("load model and next epoch...")
@@ -52,15 +57,18 @@ def main():
 	start_epoch = int(argv[3])
 	end_epoch = int(argv[4])
 
+	VAL = 2400
+	BATCH = 100
+	EPOCHS = 100
 	score = [0]
 	if AUGMENT == 1: 
 		print("train with augmented data...")
 		datagen = ImageDataGenerator(vertical_flip=False, horizontal_flip=True, \
 																 height_shift_range=0.1, width_shift_range=0.1)
-		Xv = X[:2400]
-		Yv = Y[:2400]
-		datagen.fit(X[2400:], seed=1028)
-		history = model.fit_generator(datagen.flow(X[2400:], Y[2400:], batch_size=BATCH, seed=1028), samples_per_epoch=len(X), \
+		Xv = X[:VAL]
+		Yv = Y[:VAL]
+		datagen.fit(X[VAL:], seed=1028)
+		history = model.fit_generator(datagen.flow(X[VAL:], Y[VAL:], batch_size=BATCH, seed=1028), samples_per_epoch=len(X), \
 																	epochs=end_epoch, verbose=1, validation_data=(Xv, Yv), initial_epoch=start_epoch)
 		score.append(round(history.history['val_acc'][-1], 6))
 		print("train accuracy (last val) = " + repr(score[1]))

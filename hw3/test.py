@@ -9,6 +9,9 @@ from keras.models import load_model
 
 np.set_printoptions(precision = 6, suppress = True)
 
+READ_FROM_NPZ = 1
+SHAPE = 48
+
 def read_test(filename):
 
 	data = []
@@ -34,18 +37,24 @@ def write_file(filename, result):
 # argv: [1]test.csv [2]predict.csv [3]model.h5
 def main():
 	
-	print("read test data...")
-	data = read_test(argv[1])
+	X_test = []
+	if READ_FROM_NPZ:
+		print("read from npz...")
+		data = np.load("data.npz")
+		X_test = data['arr_2']
+	else:
+		print("read test data...")
+		X_test = read_test(argv[2])
 
-	print("reshape test data...")
-	data = data / 255
-	data = data.reshape(data.shape[0], 48, 48, 1)
+	print("reshape data...")
+	X_test = X_test/255
+	X_test = X_test.reshape(X_test.shape[0], SHAPE, SHAPE, 1)
 
 	print("load model...")
 	model = load_model(argv[3])
 
 	print("predict...")
-	result = model.predict(data, batch_size = 128, verbose = 1)
+	result = model.predict(X_test, batch_size = 128, verbose = 1)
 
 	print("output result...")
 	write_file(argv[2], result)
