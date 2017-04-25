@@ -115,6 +115,5 @@ def main():
 	print("save model...")
 	model.save("{:.6f}".format(round(score[1], 6)) + ".h5")
 
-
 if __name__ == '__main__':
 	main()

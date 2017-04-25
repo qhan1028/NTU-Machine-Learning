@@ -60,8 +60,3 @@ score = model2.evaluate(x_train,y_train)
 print '\nTrain Acc:', score[1]
 score = model2.evaluate(x_test,y_test)
 print '\nTest Acc:', score[1]
-
-
-
-
-

@@ -1,4 +1,4 @@
-# ML 2017 hw3 Train CNN
+# ML 2017 hw3 re-Train CNN
 
 import numpy as np
 import csv
@@ -35,7 +35,7 @@ def read_train(filename):
 
 	return np.array(X), np_utils.to_categorical(Y, CATEGORY)
 
-# argv: 1: train.csv 2: model.h5 3: start_epoch 4: end_epoch
+# argv: [1]train.csv [2]model.h5 [3]start_epoch [4]end_epoch
 def main():
 	
 	X, Y = [], []

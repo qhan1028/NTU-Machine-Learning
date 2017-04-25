@@ -1,4 +1,4 @@
-# ML 2017 hw3 Train CNN
+# ML 2017 hw3 Semi-Supervised Train CNN
 
 import numpy as np
 import csv
