@@ -70,7 +70,7 @@ def main():
 	result = np.zeros([len(X_test), CATEGORY])
 	for i in range(nb_models):
 		model_name = model_list[i]
-		print("model: " + model_name)
+		print("model: " + model_name, flush=True)
 		model = load_model(model_name)
 		result += model.predict(X_test, batch_size = 128, verbose = 1)
 		print("", flush=True)

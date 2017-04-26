@@ -91,7 +91,7 @@ def main():
 
 	VAL = 2400
 	BATCH = 128
-	EPOCHS = 10
+	EPOCHS = 20
 	score = [0]
 	if AUGMENT == 1: 
 		print("train with augmented data...")
