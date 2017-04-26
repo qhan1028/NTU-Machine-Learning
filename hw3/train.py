@@ -114,7 +114,7 @@ def main():
 
 	print("save model...")
 	model.save("{:.6f}".format(round(score[1], 6)) + ".h5")
-	plot_model(model, to_file="{:6f}".format(round(score[1], 6)) + ".png")
+	#plot_model(model, to_file="{:6f}".format(round(score[1], 6)) + ".png")
 
 if __name__ == '__main__':
 	main()

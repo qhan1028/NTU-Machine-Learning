@@ -1,4 +1,4 @@
-# ML 2017 hw3 Test CNN
+# ML 2017 hw3 Test DNN
 
 import numpy as np
 import csv
@@ -48,7 +48,7 @@ def main():
 
 	print("reshape data...")
 	X_test = X_test/255
-	X_test = X_test.reshape(X_test.shape[0], SHAPE, SHAPE, 1)
+	X_test = X_test.reshape(X_test.shape[0], 48 * 48)
 
 	print("load model...")
 	model = load_model(argv[3])
@@ -56,7 +56,7 @@ def main():
 	print("predict...")
 	result = model.predict(X_test, batch_size = 128, verbose = 1)
 
-	print("output result...", flush=True)
+	print("output result...")
 	write_file(argv[2], result)
 
 if __name__ == "__main__":
