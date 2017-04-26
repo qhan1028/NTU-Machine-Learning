@@ -19,7 +19,6 @@ np.set_printoptions(precision = 6, suppress = True)
 SHAPE = 48
 CATEGORY = 7
 
-
 READ_FROM_NPZ = 1
 AUGMENT = 1
 
