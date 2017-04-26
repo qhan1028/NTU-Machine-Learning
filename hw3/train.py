@@ -1,6 +1,7 @@
 # ML 2017 hw3 Train CNN
 
 import numpy as np
+np.set_printoptions(precision = 6, suppress = True)
 import csv
 from sys import argv
 import os
@@ -10,11 +11,10 @@ from keras.layers.core import Dense, Dropout, Activation
 from keras.layers import Conv2D, MaxPooling2D, Flatten
 from keras.layers.normalization import BatchNormalization
 from keras.optimizers import SGD, Adam
-from keras.utils import np_utils
+from keras.utils import np_utils, plot_model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import EarlyStopping
 
-np.set_printoptions(precision = 6, suppress = True)
 
 SHAPE = 48
 CATEGORY = 7
@@ -114,6 +114,7 @@ def main():
 
 	print("save model...")
 	model.save("{:.6f}".format(round(score[1], 6)) + ".h5")
+	plot_model(model, to_file="{:6f}".format(round(score[1], 6)) + ".png")
 
 if __name__ == '__main__':
 	main()
