@@ -59,20 +59,14 @@ def main():
 	model.add(BatchNormalization(axis=-1))
 	model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
 	model.add(BatchNormalization(axis=-1))
-	model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
-	model.add(BatchNormalization(axis=-1))
 	model.add(MaxPooling2D((2, 2)))
 
 	model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
 	model.add(BatchNormalization(axis=-1))
 	model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
 	model.add(BatchNormalization(axis=-1))
-	model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
-	model.add(BatchNormalization(axis=-1))
 	model.add(MaxPooling2D((2, 2)))
 
-	model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
-	model.add(BatchNormalization(axis=-1))
 	model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
 	model.add(BatchNormalization(axis=-1))
 	model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
@@ -80,9 +74,8 @@ def main():
 	model.add(MaxPooling2D((2, 2)))
 	model.add(Flatten())
 	
+	model.add(Dense(units = 512, activation='relu'))
 	model.add(Dense(units = 256, activation='relu'))
-	model.add(Dense(units = 128, activation='relu'))
-	model.add(Dense(units = 64, activation='relu'))
 	model.add(Dense(units = 7, activation='softmax'))
 	model.summary()
 
@@ -91,7 +84,7 @@ def main():
 
 	VAL = 2400
 	BATCH = 128
-	EPOCHS = 20
+	EPOCHS = 30
 	score = [0]
 	if AUGMENT == 1: 
 		print("train with augmented data...")
@@ -114,7 +107,6 @@ def main():
 
 	print("save model...")
 	model.save("{:.6f}".format(round(score[1], 6)) + ".h5")
-	#plot_model(model, to_file="{:6f}".format(round(score[1], 6)) + ".png")
 
 if __name__ == '__main__':
 	main()
