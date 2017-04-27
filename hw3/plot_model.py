@@ -79,36 +79,41 @@ def main():
 		figure.get_figure().savefig(model_name[:-3] + "_cm.png")
 
 	if SALIENCY:
-		fig_no = 12345
+		fig_no = [(1, 921), (2, 1108), (3, 33), (4, 119), (5, 1028)]
+		fig_num = len(fig_no)
 		plt.clf()
-		plt.imshow(X[fig_no].reshape(SHAPE, SHAPE), cmap='gray')
-		ax.set_xticks(range(1, 48, 5))
-		ax.set_yticks(range(1, 48, 5))
-		ax.set_xticklabels(range(1, 48, 5))
-		ax.set_yticklabels(range(1, 48, 5))
-		plt.savefig(repr(fig_no) + ".png")
-		plt.clf()
-		print("plot saliency maps on image " + repr(fig_no) + "...")
-		X_fig = X[fig_no].reshape(1, SHAPE, SHAPE, 1)
-		Y_fig = Y[fig_no].reshape(1, CATEGORY)
-		score = model.evaluate(X_fig, Y_fig, verbose=1)
-		original_loss = score[0]
-		loss_matrix = np.zeros([SHAPE, SHAPE])
-		for i in range(SHAPE):
-			for j in range(SHAPE):
-				print("\rrow: " + repr(i) + " column: " + repr(j), end="", flush=True)
-				X_tmp = np.array(X_fig)
-				X_tmp[0][i][j][0] += 1
-				score = model.evaluate(X_tmp, Y_fig, verbose=0)
-				loss_matrix[i][j] = abs(score[0] - original_loss)
+		for i, f in fig_no:
+			plt.subplot(2, fig_num, i)
+			plt.title("Figure " + repr(f) + ".")
+			plt.imshow(X[f].reshape(SHAPE, SHAPE), cmap='gray')
+			ax = plt.gca()
+			ax.set_xticks(range(1, 48, 10))
+			ax.set_yticks(range(1, 48, 10))
+			ax.set_xticklabels(range(1, 48, 10))
+			ax.set_yticklabels(range(1, 48, 10))
 
-		#figure = sb.heatmap(loss_matrix, annot=False)
-		plt.imshow(loss_matrix, cmap='YlOrBr', vmin=loss_matrix.min(), vmax=loss_matrix.max())
-		ax = plt.gca()
-		ax.set_xticks(range(1, 48, 5))
-		ax.set_yticks(range(1, 48, 5))
-		ax.set_xticklabels(range(1, 48, 5))
-		ax.set_yticklabels(range(1, 48, 5))
+			print("plot saliency maps on image " + repr(f) + "...")
+			plt.subplot(2, fig_num, i+fig_num)
+			X_fig = X[f].reshape(1, SHAPE, SHAPE, 1)
+			Y_fig = Y[f].reshape(1, CATEGORY)
+			score = model.evaluate(X_fig, Y_fig, verbose=1)
+			original_loss = score[0]
+			loss_matrix = np.zeros([SHAPE, SHAPE])
+			for i in range(SHAPE):
+				for j in range(SHAPE):
+					print("\rrow: " + repr(i) + " column: " + repr(j), end="", flush=True)
+					X_tmp = np.array(X_fig)
+					X_tmp[0][i][j][0] += 1
+					score = model.evaluate(X_tmp, Y_fig, verbose=0)
+					loss_matrix[i][j] = (score[0] - original_loss) ** 2
+			print("", flush=True)
+
+			plt.imshow(loss_matrix, cmap='cool', vmin=loss_matrix.min(), vmax=loss_matrix.max())
+			ax = plt.gca()
+			ax.set_xticks(range(1, 48, 10))
+			ax.set_yticks(range(1, 48, 10))
+			ax.set_xticklabels(range(1, 48, 10))
+			ax.set_yticklabels(range(1, 48, 10))
 		plt.savefig(model_name[:-3] + "_sm.png")
 
 if __name__ == "__main__":
