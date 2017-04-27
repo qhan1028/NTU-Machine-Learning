@@ -1,6 +1,9 @@
 # ML2017 hw3 Plot Model
 
 import numpy as np
+import seaborn as sn
+import pandas as pd
+import matplotlib.pyplot as plt
 from sys import argv
 import csv
 import os
@@ -47,14 +50,17 @@ def main():
 	plot_model(model, show_layer_names=False, show_shapes=True, to_file=model_name[:-3] + ".png")
 
 	print("plot confusion matrix...")
-	X = X.reshape(X.shape[0], 48, 48, 1)
-	Y = np.argmax(Y, 1)
+	X = X / 255
+	X = X.reshape(X.shape[0], 48, 48, 1)[:100]
+	Y = np.argmax(Y, 1)[:100]
 	predict = model.predict(X, verbose=1, batch_size=128)
 	Y_predict = np.argmax(predict, 1)
 	cm = confusion_matrix(Y, Y_predict)
-	print(Y)
-	print(Y_predict)
 	print(cm)
+	df_cm = pd.DataFrame(cm, range(6), range(6))
+	sn.set(font_scale=1.4)#for label size
+	result = sn.heatmap(df_cm, annot=True, annot_kws={"size": 16})# font size
+	result.get_figure().savefig("tmp.png")
 
 if __name__ == "__main__":
 	main()
