@@ -1,13 +1,17 @@
 # ML2017 hw3 Plot Model
 
-import numpy as np
 from sys import argv
+import numpy as np
+import seaborn as sb
+import pandas as pd
+import matplotlib.pyplot as plt
 import csv
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 from keras.models import load_model
 from keras.utils import plot_model, np_utils
 from sklearn.metrics import confusion_matrix
+
 
 READ_FROM_NPZ = 1
 CATEGORY = 7
@@ -44,17 +48,28 @@ def main():
 	model = load_model(model_name)
 	model.summary()
 	print("save structure figure...")
-	plot_model(model, show_layer_names=False, show_shapes=True, to_file=model_name[:-3] + ".png")
+	#plot_model(model, show_layer_names=False, show_shapes=True, to_file=model_name[:-3] + "_struct.png")
 
-	print("plot confusion matrix...")
+	print("predict train data...")
+	X = X / 255
 	X = X.reshape(X.shape[0], 48, 48, 1)
 	Y = np.argmax(Y, 1)
-	predict = model.predict(X, verbose=1, batch_size=128)
+	predict = model.predict(X, verbose=1, batch_size=32)
 	Y_predict = np.argmax(predict, 1)
+	
+	print("plot confusion matrix...")
 	cm = confusion_matrix(Y, Y_predict)
-	print(Y)
-	print(Y_predict)
 	print(cm)
+	#df_cm = pd.DataFrame(cm, columns = ["angry", "disgust", "fear", "happy", "sad", "suprise", "neutral"])
+	sb.set(font_scale=1.4)
+	figure = sb.heatmap(cm, annot=True, annot_kws={"size": 16 }, fmt='d', cmap='YlGnBu')
+	figure.set_xticklabels(["angry", "disgust", "fear", "happy", "sad", "suprise", "neutral"])
+	figure.set_yticklabels(["angry", "disgust", "fear", "happy", "sad", "suprise", "neutral"])
+	plt.yticks(rotation=0)
+	plt.xlabel("Predicted Label")
+	plt.ylabel("True Label")
+	figure.get_figure().savefig(model_name[:-3] + "_cm.png")
+
 
 if __name__ == "__main__":
 	main()
