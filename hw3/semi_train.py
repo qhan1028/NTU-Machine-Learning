@@ -142,11 +142,11 @@ def main():
 																 height_shift_range=0.1, width_shift_range=0.1)
 		Xv = X[:VAL]
 		Yv = Y[:VAL]
-		datagen.fit(X[VAL:], seed=1028)
-		history = model.fit_generator(datagen.flow(X[VAL:], Y[VAL:], batch_size=BATCH, seed=1028), samples_per_epoch=len(X), \
-																	epochs=EPOCHS, verbose=1, validation_data=(Xv, Yv))
-		score.append(round(history.history['val_acc'][-1], 6))
-		print("train accuracy (last val) = " + repr(score[1]))
+		datagen.fit(X, seed=1028)
+		history = model.fit_generator(datagen.flow(X, Y, batch_size=BATCH, seed=1028), samples_per_epoch=len(X), \
+																	epochs=EPOCHS, verbose=1)
+		score.append(round(history.history['acc'][-1], 6))
+		print("train accuracy (last acc) = " + repr(score[1]))
 	else:
 		print("train with raw data...")
 		earlyStopping = EarlyStopping(monitor='val_acc', patience=5, verbose=1, mode='auto')
