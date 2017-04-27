@@ -64,7 +64,7 @@ def main():
 	sb.set(font_scale=1.4)
 	figure = sb.heatmap(cm, annot=True, annot_kws={"size": 16 }, fmt='d', cmap='YlGnBu')
 	figure.set_xticklabels(["angry", "disgust", "fear", "happy", "sad", "suprise", "neutral"])
-	figure.set_yticklabels(["angry", "disgust", "fear", "happy", "sad", "suprise", "neutral"])
+	figure.set_yticklabels(["angry", "disgust", "fear", "happy", "sad", "suprise", "neutral"][::-1])
 	plt.yticks(rotation=0)
 	plt.xlabel("Predicted Label")
 	plt.ylabel("True Label")
