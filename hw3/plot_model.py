@@ -82,6 +82,7 @@ def main():
 		fig_no = [(1, 921), (2, 1108), (3, 33), (4, 119), (5, 1028)]
 		fig_num = len(fig_no)
 		plt.clf()
+		plt.subplots_adjust(wspace=0.4)
 		for i, f in fig_no:
 			plt.subplot(2, fig_num, i)
 			plt.title("Figure " + repr(f) + ".")
