@@ -21,6 +21,7 @@ CATEGORY = 7
 
 READ_FROM_NPZ = 1
 AUGMENT = 1
+CHECK_POINT = 1
 
 SEMI_THRES = 0.5
 
@@ -123,6 +124,8 @@ def main():
 	model.add(MaxPooling2D((2, 2)))
 	model.add(Flatten())
 	
+	model.add(Dense(units = 1024, activation='relu'))
+	model.add(Dense(units = 512, activation='relu'))
 	model.add(Dense(units = 256, activation='relu'))
 	model.add(Dense(units = 128, activation='relu'))
 	model.add(Dense(units = 64, activation='relu'))
@@ -134,19 +137,26 @@ def main():
 
 	VAL = 2400
 	BATCH = 128
-	EPOCHS = 20
+	EPOCHS = 30
 	score = [0]
 	if AUGMENT == 1: 
 		print("train with augmented data...")
-		datagen = ImageDataGenerator(vertical_flip=False, horizontal_flip=True, \
+		filepath = "./new_model/{epoch:02d}_{val_acc:.6f}.h5"
+		cp = ModelCheckpoint(filepath, verbose=1)
+		datagen = ImageDataGenerator(vertical_flip=False, horizontal_flip=True, fill_mode='nearest', \
 																 height_shift_range=0.1, width_shift_range=0.1)
 		Xv = X[:VAL]
 		Yv = Y[:VAL]
-		datagen.fit(X, seed=1028)
-		history = model.fit_generator(datagen.flow(X, Y, batch_size=BATCH, seed=1028), samples_per_epoch=len(X), \
-																	epochs=EPOCHS, verbose=1)
-		score.append(round(history.history['acc'][-1], 6))
-		print("train accuracy (last acc) = " + repr(score[1]))
+		datagen.fit(X[VAL:], seed=1028)
+		history = []
+		if CHECK_POINT:
+			history = model.fit_generator(datagen.flow(X[VAL:], Y[VAL:], batch_size=BATCH, seed=1028), callbacks=[cp],\
+																		samples_per_epoch=len(X[VAL:]), epochs=EPOCHS, verbose=1, validation_data=(Xv, Yv))
+		else:
+			history = model.fit_generator(datagen.flow(X[VAL:], Y[VAL:], batch_size=BATCH, seed=1028),\
+																		samples_per_epoch=len(X[VAL:]), epochs=EPOCHS, verbose=1, validation_data=(Xv, Yv))
+		score.append(round(history.history['val_acc'][-1], 6))
+		print("train accuracy (last) = " + repr(score[1]))
 	else:
 		print("train with raw data...")
 		earlyStopping = EarlyStopping(monitor='val_acc', patience=5, verbose=1, mode='auto')

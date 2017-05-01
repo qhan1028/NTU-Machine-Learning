@@ -19,7 +19,7 @@ SHAPE = 48
 
 STRUCTURE = 0
 CONFUSION = 0
-SALIENCY = 1
+SALIENCY = 0
 
 def read_train(filename):
 	
