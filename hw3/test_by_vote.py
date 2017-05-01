@@ -5,6 +5,7 @@ import csv
 from sys import argv
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
+from os.path import isfile
 from keras.models import load_model
 
 np.set_printoptions(precision = 6, suppress = True)
@@ -32,8 +33,9 @@ def read_model_list(filename):
 	model_list = []
 	with open(filename, "r") as f:
 		for line in f:
-			model_name = line[:-1]
-			model_list.append(model_name)
+			weight = float(line.split()[0])
+			model_name = line.split()[1]
+			model_list.append((weight, model_name))
 
 	return model_list
 
@@ -69,12 +71,18 @@ def main():
 	print("predict...")
 	result = np.zeros([len(X_test), CATEGORY])
 	for i in range(nb_models):
-		model_name = model_list[i]
-		print("model: " + model_name, flush=True)
-		model = load_model(model_name)
-		result += model.predict(X_test, batch_size = 128, verbose = 1)
+		weight = model_list[i][0]
+		model_name = model_list[i][1]
+		print("model: " + model_name + " weight: " + repr(weight), flush=True)
+		predict = np.zeros(result.shape)
+		if isfile(model_name + ".npy"):
+			predict = np.load(model_name + ".npy")
+		else:
+			model = load_model(model_name)
+			predict = model.predict(X_test, batch_size = 128, verbose = 1)
+			np.save(model_name + ".npy", predict)
+		result += predict * weight
 		print("", flush=True)
-	result /= nb_models
 
 	print("output result...")
 	write_file(argv[2], result)
