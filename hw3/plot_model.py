@@ -55,6 +55,8 @@ def main():
 	model_name = argv[2]
 	model = load_model(model_name)
 	model.summary()
+	
+	label = ["angry", "disgust", "fear", "happy", "sad", "suprise", "neutral"]
 
 	if STRUCTURE:
 		print("plot structure...")
@@ -71,32 +73,34 @@ def main():
 
 		sb.set(font_scale=1.4)
 		figure = sb.heatmap(cm, annot=True, annot_kws={"size": 16 }, fmt='d', cmap='YlGnBu')
-		figure.set_xticklabels(["angry", "disgust", "fear", "happy", "sad", "suprise", "neutral"])
-		figure.set_yticklabels(["angry", "disgust", "fear", "happy", "sad", "suprise", "neutral"])
+		figure.set_xticklabels(label)
+		figure.set_yticklabels(label)
 		plt.yticks(rotation=0)
 		plt.xlabel("Predicted Label")
 		plt.ylabel("True Label")
 		figure.get_figure().savefig(model_name[:-3] + "_cm.png")
 
 	if SALIENCY:
-		fig_no = [(1, 921), (2, 1108), (3, 33), (4, 119), (5, 1028)]
+		fig_no = [(1, 12928), (2, 25419), (3, 7824), (4, 27865), (5, 18872), (6, 16237), (7, 1206)]
 		fig_num = len(fig_no)
-		plt.clf()
+		plt.figure(figsize=(5, 15))
 		plt.subplots_adjust(wspace=0.4)
 		for i, f in fig_no:
-			plt.subplot(2, fig_num, i)
-			plt.title("Figure " + repr(f) + ".")
+			print("plot image " + repr(f) + "...")
+			ax = plt.subplot(2, fig_num, i)
+			plt.title(repr(f) + ".")
 			plt.imshow(X[f].reshape(SHAPE, SHAPE), cmap='gray')
-			ax = plt.gca()
-			ax.set_xticks(range(1, 48, 10))
-			ax.set_yticks(range(1, 48, 10))
-			ax.set_xticklabels(range(1, 48, 10))
-			ax.set_yticklabels(range(1, 48, 10))
+			ax.set_xticks(range(0, 48, 10))
+			ax.set_yticks(range(0, 48, 10))
+			ax.set_xticklabels(range(0, 48, 10))
+			ax.set_yticklabels(range(0, 48, 10))
 
 			print("plot saliency maps on image " + repr(f) + "...")
-			plt.subplot(2, fig_num, i+fig_num)
+			ax = plt.subplot(2, fig_num, i+fig_num)
 			X_fig = X[f].reshape(1, SHAPE, SHAPE, 1)
 			Y_fig = Y[f].reshape(1, CATEGORY)
+			plt.title(label[Y_fig.argmax()])
+
 			score = model.evaluate(X_fig, Y_fig, verbose=1)
 			original_loss = score[0]
 			loss_matrix = np.zeros([SHAPE, SHAPE])
@@ -110,11 +114,11 @@ def main():
 			print("", flush=True)
 
 			plt.imshow(loss_matrix, cmap='cool', vmin=loss_matrix.min(), vmax=loss_matrix.max())
-			ax = plt.gca()
-			ax.set_xticks(range(1, 48, 10))
-			ax.set_yticks(range(1, 48, 10))
-			ax.set_xticklabels(range(1, 48, 10))
-			ax.set_yticklabels(range(1, 48, 10))
+			ax.set_xticks(range(0, 48, 10))
+			ax.set_yticks(range(0, 48, 10))
+			ax.set_xticklabels(range(0, 48, 10))
+			ax.set_yticklabels(range(0, 48, 10))
+		plt.show()
 		plt.savefig(model_name[:-3] + "_sm.png")
 
 if __name__ == "__main__":
