@@ -12,7 +12,7 @@ from keras.layers.normalization import BatchNormalization
 from keras.optimizers import SGD, Adam
 from keras.utils import np_utils
 from keras.preprocessing.image import ImageDataGenerator
-from keras.callbacks import EarlyStopping
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 np.set_printoptions(precision = 6, suppress = True)
 
@@ -141,8 +141,6 @@ def main():
 	score = [0]
 	if AUGMENT == 1: 
 		print("train with augmented data...")
-		filepath = "./new_model/{epoch:02d}_{val_acc:.6f}.h5"
-		cp = ModelCheckpoint(filepath, verbose=1)
 		datagen = ImageDataGenerator(vertical_flip=False, horizontal_flip=True, fill_mode='nearest', \
 																 height_shift_range=0.1, width_shift_range=0.1)
 		Xv = X[:VAL]
@@ -150,13 +148,17 @@ def main():
 		datagen.fit(X[VAL:], seed=1028)
 		history = []
 		if CHECK_POINT:
+			filepath = "./new_model/{epoch:02d}_{val_acc:.6f}.h5"
+			cp = ModelCheckpoint(filepath, verbose=1)
 			history = model.fit_generator(datagen.flow(X[VAL:], Y[VAL:], batch_size=BATCH, seed=1028), callbacks=[cp],\
 																		samples_per_epoch=len(X[VAL:]), epochs=EPOCHS, verbose=1, validation_data=(Xv, Yv))
+			os.rename("new_model", "semi"+"{:.6f}".format(history.history['val_acc'][-1]))
 		else:
 			history = model.fit_generator(datagen.flow(X[VAL:], Y[VAL:], batch_size=BATCH, seed=1028),\
 																		samples_per_epoch=len(X[VAL:]), epochs=EPOCHS, verbose=1, validation_data=(Xv, Yv))
 		score.append(round(history.history['val_acc'][-1], 6))
 		print("train accuracy (last) = " + repr(score[1]))
+
 	else:
 		print("train with raw data...")
 		earlyStopping = EarlyStopping(monitor='val_acc', patience=5, verbose=1, mode='auto')
@@ -167,7 +169,6 @@ def main():
 
 	print("save new model...")
 	model.save("semi_" + "{:.6f}".format(round(score[1], 6)) + "_" + argv[3])
-
 
 if __name__ == '__main__':
 	main()
