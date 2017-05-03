@@ -5,3 +5,5 @@
 *.h5
 *.swp
 *.DS_Store
+*.npy
+*.npz
