@@ -120,8 +120,8 @@ def main():
 			ax.set_yticks([10, 20, 30, 40])
 			ax.set_xticklabels([10, 20, 30, 40])
 			ax.set_yticklabels([10, 20, 30, 40])
-		plt.show()
 		plt.savefig(model_name[:-3] + "_sm.png")
+		plt.show()
 
 	if HISTORY:
 		plt.clf()
@@ -133,13 +133,12 @@ def main():
 		plt.legend(["acc", "val_acc"], loc="upper left")
 		plt.plot(acc, 'bo')
 		plt.plot(val_acc, 'ro')
-		plt.xticks(np.linspace(-1, 20, 22))
 		plt.yticks(np.linspace(0.1, 0.8, 8))
 		plt.xlabel("epochs")
 		plt.ylabel("accuracy")
 		plt.title("Training Process of %s" % model_name)
-		plt.show()
 		plt.savefig(model_name[:-3] + "_his.png")
+		plt.show()
 
 if __name__ == "__main__":
 	main()
