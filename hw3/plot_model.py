@@ -84,17 +84,17 @@ def main():
 	if SALIENCY:
 		fig_no = [(1, 12928), (2, 25419), (3, 7824), (4, 27865), (5, 18872), (6, 16237), (7, 1206)]
 		fig_num = len(fig_no)
-		plt.figure(figsize=(5, 15))
+		plt.figure(figsize=(16, 4))
 		plt.subplots_adjust(wspace=0.4)
 		for i, f in fig_no:
 			print("plot image " + repr(f) + "...")
 			ax = plt.subplot(2, fig_num, i)
 			plt.title(repr(f) + ".")
 			plt.imshow(X[f].reshape(SHAPE, SHAPE), cmap='gray')
-			ax.set_xticks(range(0, 48, 10))
-			ax.set_yticks(range(0, 48, 10))
-			ax.set_xticklabels(range(0, 48, 10))
-			ax.set_yticklabels(range(0, 48, 10))
+			ax.set_xticks([10, 20, 30, 40])
+			ax.set_yticks([10, 20, 30, 40])
+			ax.set_xticklabels([10, 20, 30, 40])
+			ax.set_yticklabels([10, 20, 30, 40])
 
 			print("plot saliency maps on image " + repr(f) + "...")
 			ax = plt.subplot(2, fig_num, i+fig_num)
@@ -116,10 +116,10 @@ def main():
 			print("", flush=True)
 
 			plt.imshow(loss_matrix, cmap='cool', vmin=loss_matrix.min(), vmax=loss_matrix.max())
-			ax.set_xticks(range(0, 48, 10))
-			ax.set_yticks(range(0, 48, 10))
-			ax.set_xticklabels(range(0, 48, 10))
-			ax.set_yticklabels(range(0, 48, 10))
+			ax.set_xticks([10, 20, 30, 40])
+			ax.set_yticks([10, 20, 30, 40])
+			ax.set_xticklabels([10, 20, 30, 40])
+			ax.set_yticklabels([10, 20, 30, 40])
 		plt.show()
 		plt.savefig(model_name[:-3] + "_sm.png")
 
