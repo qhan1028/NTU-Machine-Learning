@@ -19,8 +19,8 @@ SHAPE = 48
 
 STRUCTURE = 0
 CONFUSION = 0
-SALIENCY = 1
-HISTORY = 0
+SALIENCY = 0
+HISTORY = 1
 
 def read_train(filename):
 	
@@ -84,7 +84,7 @@ def main():
 	if SALIENCY:
 		fig_no = [(1, 12928), (2, 25419), (3, 7824), (4, 27865), (5, 18872), (6, 16237), (7, 1206)]
 		fig_num = len(fig_no)
-		plt.figure(figsize=(5, 15))
+		plt.figure(figsize=(16, 4))
 		plt.subplots_adjust(wspace=0.4)
 		for i, f in fig_no:
 			print("plot image " + repr(f) + "...")
@@ -124,7 +124,7 @@ def main():
 		plt.savefig(model_name[:-3] + "_sm.png")
 
 	if HISTORY:
-		pl.clf()
+		plt.clf()
 		history = np.load(model_name[:-3] + "_history.npz")
 		acc = history['arr_0']
 		val_acc = history['arr_1']
@@ -133,8 +133,8 @@ def main():
 		plt.legend(["acc", "val_acc"], loc="upper left")
 		plt.plot(acc, 'bo')
 		plt.plot(val_acc, 'ro')
-		plt.xtick(np.linspace(-1, 21, 23))
-		plt.ytick(np.linspace(0.1, 0.8, 8))
+		plt.xticks(np.linspace(-1, 20, 22))
+		plt.yticks(np.linspace(0.1, 0.8, 8))
 		plt.xlabel("epochs")
 		plt.ylabel("accuracy")
 		plt.title("Training Process of %s" % model_name)
