@@ -19,8 +19,9 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint
 SHAPE = 48
 CATEGORY = 7
 
-READ_FROM_NPZ = 1
-CHECK_POINT = 1
+READ_FROM_NPZ = 0
+CHECK_POINT = 0
+SAVE_HISTORY = 1
 AUGMENT = 1
 
 def read_train(filename):
@@ -81,8 +82,6 @@ def main():
 	model.add(MaxPooling2D((2, 2)))
 
 	model.add(Flatten())
-	model.add(Dense(units = 1024, activation='relu'))
-	model.add(Dense(units = 512, activation='relu'))
 	model.add(Dense(units = 256, activation='relu'))
 	model.add(Dense(units = 128, activation='relu'))
 	model.add(Dense(units = 64, activation='relu'))
@@ -105,6 +104,7 @@ def main():
 		datagen.fit(X[VAL:], seed=1028)
 		history = []
 		if CHECK_POINT:
+			os.mkdir("new_model")
 			filepath = "./new_model/{epoch:02d}_{val_acc:.6f}.h5"
 			cp = ModelCheckpoint(filepath, verbose=1)
 			history = model.fit_generator(datagen.flow(X[VAL:], Y[VAL:], batch_size=BATCH, seed=1028), callbacks=[cp],\
@@ -113,8 +113,12 @@ def main():
 		else:
 			history = model.fit_generator(datagen.flow(X[VAL:], Y[VAL:], batch_size=BATCH, seed=1028),\
 																		samples_per_epoch=len(X[VAL:]), epochs=EPOCHS, verbose=1, validation_data=(Xv, Yv))
-		score.append(round(history.history['val_acc'][-1], 6))
-		print("train accuracy (last) = " + repr(score[1]))
+		score.append(history.history['val_acc'][-1])
+		print("train accuracy (last) = " + "{:.6f}".format(score[1]))
+		if SAVE_HISTORY:
+			print("save history...")
+			h = history.history
+			np.savez("{:.6f}".format(score[1]) + "_history.npz", h['acc'], h['val_acc'])
 	else:
 		print("train with raw data...")
 		es = EarlyStopping(monitor='val_acc', patience=5, verbose=1, mode='auto')
@@ -124,7 +128,7 @@ def main():
 		print("train accuracy (all) = " + repr(score[1]))
 
 	print("save model...")
-	model.save("{:.6f}".format(round(score[1], 6)) + ".h5")
+	model.save("{:.6f}".format(score[1]) + ".h5")
 
 if __name__ == '__main__':
 	main()

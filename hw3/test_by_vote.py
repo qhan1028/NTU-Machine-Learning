@@ -12,8 +12,9 @@ np.set_printoptions(precision = 6, suppress = True)
 
 CATEGORY = 7
 
-READ_FROM_NPZ = 1
+READ_FROM_NPZ = 0
 SHAPE = 48
+SAVE_RESULT = 0
 
 def read_test(filename):
 
@@ -80,7 +81,8 @@ def main():
 		else:
 			model = load_model(model_name)
 			predict = model.predict(X_test, batch_size = 128, verbose = 1)
-			np.save(model_name + ".npy", predict)
+			if SAVE_RESULT:
+				np.save(model_name + ".npy", predict)
 		result += predict * weight
 		print("", flush=True)
 
