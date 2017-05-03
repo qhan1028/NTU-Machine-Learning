@@ -21,6 +21,7 @@ def deprocess_image(x):
     x = np.clip(x, 0, 255).astype('uint8')
     return x
 
+# argv: [1]model.h5
 def main():
 
 	model_name = argv[1]
