@@ -63,7 +63,7 @@ def main():
 		plt.imshow(input_img_data[0].reshape(48, 48), cmap='gray')
 
 	print("save image...")
-	plt.savefig("%s_%s.png" % (model_name, layer_name))
+	plt.savefig("%s_%s.png" % (model_name[:-3], layer_name))
 
 if __name__ == "__main__":
 	main()

@@ -19,7 +19,8 @@ SHAPE = 48
 
 STRUCTURE = 0
 CONFUSION = 0
-SALIENCY = 0
+SALIENCY = 1
+HISTORY = 0
 
 def read_train(filename):
 	
@@ -54,11 +55,11 @@ def main():
 	print("load model...")
 	model_name = argv[2]
 	model = load_model(model_name)
-	model.summary()
 	
 	label = ["angry", "disgust", "fear", "happy", "sad", "suprise", "neutral"]
 
 	if STRUCTURE:
+		model.summary()
 		print("plot structure...")
 		#plot_model(model, show_layer_names=False, show_shapes=True, to_file=model_name[:-3] + "_struct.png")
 
@@ -109,6 +110,7 @@ def main():
 					print("\rrow: " + repr(i) + " column: " + repr(j), end="", flush=True)
 					X_tmp = np.array(X_fig)
 					X_tmp[0][i][j][0] += 1
+					X_tmp /= 255.
 					score = model.evaluate(X_tmp, Y_fig, verbose=0)
 					loss_matrix[i][j] = (score[0] - original_loss) ** 2
 			print("", flush=True)
@@ -120,6 +122,24 @@ def main():
 			ax.set_yticklabels(range(0, 48, 10))
 		plt.show()
 		plt.savefig(model_name[:-3] + "_sm.png")
+
+	if HISTORY:
+		pl.clf()
+		history = np.load(model_name[:-3] + "_history.npz")
+		acc = history['arr_0']
+		val_acc = history['arr_1']
+		plt.plot(acc, 'b')
+		plt.plot(val_acc, 'r')
+		plt.legend(["acc", "val_acc"], loc="upper left")
+		plt.plot(acc, 'bo')
+		plt.plot(val_acc, 'ro')
+		plt.xtick(np.linspace(-1, 21, 23))
+		plt.ytick(np.linspace(0.1, 0.8, 8))
+		plt.xlabel("epochs")
+		plt.ylabel("accuracy")
+		plt.title("Training Process of %s" % model_name)
+		plt.show()
+		plt.savefig(model_name[:-3] + "_his.png")
 
 if __name__ == "__main__":
 	main()
