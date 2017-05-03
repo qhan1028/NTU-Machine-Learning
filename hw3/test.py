@@ -9,7 +9,7 @@ from keras.models import load_model
 
 np.set_printoptions(precision = 6, suppress = True)
 
-READ_FROM_NPZ = 1
+READ_FROM_NPZ = 0
 SHAPE = 48
 
 def read_test(filename):
