@@ -33,10 +33,11 @@ def filter_words(word, case):
 
 def main():
 	
-	if '--download' in argv:
+	if '--download-nltk' in argv:
 		nltk.download('punkt')
 		nltk.download('maxent_treebank_pos_tagger')
 		nltk.download('averaged_perceptron_tagger')
+		nltk.download('brown')
 
 	if not isfile('wordvec.bin') or '--train' in argv:
 		print("\nwords to phrases...")
@@ -50,7 +51,7 @@ def main():
 	print("model shape: " + repr(model.vectors.shape))
 	
 	X, Y = [], []
-	if '--load' in argv:
+	if '--load-vector' in argv:
 		if isfile('X.npy') and isfile('Y.npy'):
 			X = np.load('X.npy')
 			Y = np.load('Y.npy')

@@ -50,7 +50,7 @@ def main():
 	data = np.load(argv[1])
 
 	V = []
-	if '--load-V' in argv:
+	if '--load-variance' in argv:
 		print("load variance...")
 		V = np.load('V.npy')
 	else:
@@ -64,7 +64,7 @@ def main():
 			np.save('V.npy', V)
 
 	centers = []
-	if '--load-C' in argv:
+	if '--load-center' in argv:
 		print("load centers...")
 		centers = np.load('C.npy')
 	else:
