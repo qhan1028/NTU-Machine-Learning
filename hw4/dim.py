@@ -1,4 +1,4 @@
-# ML 2017 hw4 problem 3.
+# ML 2017 hw4 problem 3.1
 # Estimation of Intrinsic Dimension
 
 import math
