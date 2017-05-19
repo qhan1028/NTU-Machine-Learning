@@ -21,7 +21,7 @@ CATEGORY = 7
 
 READ_FROM_NPZ = 0
 CHECK_POINT = 0
-SAVE_HISTORY = 1
+SAVE_HISTORY = 0
 AUGMENT = 1
 
 def read_train(filename):
