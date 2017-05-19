@@ -61,20 +61,14 @@ def main():
 	model.add(BatchNormalization(axis=-1))
 	model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
 	model.add(BatchNormalization(axis=-1))
-	model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
-	model.add(BatchNormalization(axis=-1))
 	model.add(MaxPooling2D((2, 2)))
 
 	model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
 	model.add(BatchNormalization(axis=-1))
 	model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
 	model.add(BatchNormalization(axis=-1))
-	model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
-	model.add(BatchNormalization(axis=-1))
 	model.add(MaxPooling2D((2, 2)))
 
-	model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
-	model.add(BatchNormalization(axis=-1))
 	model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
 	model.add(BatchNormalization(axis=-1))
 	model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
@@ -84,7 +78,6 @@ def main():
 	model.add(Flatten())
 	model.add(Dense(units = 256, activation='relu'))
 	model.add(Dense(units = 128, activation='relu'))
-	model.add(Dense(units = 64, activation='relu'))
 	model.add(Dense(units = 7, activation='softmax'))
 	model.summary()
 
@@ -98,7 +91,7 @@ def main():
 	if AUGMENT == 1: 
 		print("train with augmented data...")
 		datagen = ImageDataGenerator(vertical_flip=False, horizontal_flip=True, fill_mode='nearest', \
-																 height_shift_range=0.1, width_shift_range=0.1)
+																 height_shift_range=0.1, width_shift_range=0.1, rotation_range=20.)
 		Xv = X[:VAL]
 		Yv = Y[:VAL]
 		datagen.fit(X[VAL:], seed=1028)
