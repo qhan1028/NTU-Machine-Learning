@@ -11,7 +11,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 from keras.models import load_model
 from keras.utils import plot_model, np_utils
 from sklearn.metrics import confusion_matrix
-import keras.backend as K
 
 
 READ_FROM_NPZ = 1
@@ -20,9 +19,8 @@ SHAPE = 48
 
 STRUCTURE = 0
 CONFUSION = 0
-OLD_SALIENCY = 0
-SALIENCY = 1
-HISTORY = 0
+SALIENCY = 0
+HISTORY = 1
 
 def read_train(filename):
 	
@@ -84,47 +82,6 @@ def main():
 		figure.get_figure().savefig(model_name[:-3] + "_cm.png")
 
 	if SALIENCY:
-		print("print saliency map...")
-		plt.figure(figsize=(16, 6))
-		emotion_classifier = load_model(model_name)
-		input_img = emotion_classifier.input
-		img_ids = [(1, 12928), (2, 25419), (3, 7824), (4, 27865), (5, 18872), (6, 16237), (7, 1206)]
-		for i, idx in img_ids:
-
-			print("plot figure %d." % idx)
-			img = X[idx].reshape(1, 48, 48, 1)
-			val_proba = emotion_classifier.predict(img)
-			pred = val_proba.argmax(axis=-1)
-			target = K.mean(emotion_classifier.output[:, pred])
-			grads = K.gradients(target, input_img)[0]
-			fn = K.function([input_img, K.learning_phase()], [grads])
-
-			heatmap = fn([img, 0])[0]
-			heatmap = heatmap.reshape(48, 48)
-			heatmap /= heatmap.std()
-
-			see = img.reshape(48, 48)
-			plt.subplot(3, 7, i)
-			plt.imshow(see, cmap='gray')
-			plt.title("%d. %s" % (idx, label[Y[idx].argmax()]) )
-
-			thres = heatmap.std()
-			see[np.where(abs(heatmap) <= thres)] = np.mean(see)
-
-			plt.subplot(3, 7, i+7)
-			plt.imshow(heatmap, cmap='jet')
-			plt.colorbar()
-			plt.tight_layout()
-
-			plt.subplot(3, 7, i+14)
-			plt.imshow(see,cmap='gray')
-			plt.colorbar()
-			plt.tight_layout()
-
-		plt.savefig("%s_sm.png" % model_name[:-3], dpi=100)
-		plt.show()
-
-	if OLD_SALIENCY:
 		fig_no = [(1, 12928), (2, 25419), (3, 7824), (4, 27865), (5, 18872), (6, 16237), (7, 1206)]
 		fig_num = len(fig_no)
 		plt.figure(figsize=(16, 4))
@@ -158,7 +115,7 @@ def main():
 					loss_matrix[i][j] = (score[0] - original_loss) ** 2
 			print("", flush=True)
 
-			plt.imshow(loss_matrix, cmap='jet', vmin=loss_matrix.min(), vmax=loss_matrix.max())
+			plt.imshow(loss_matrix, cmap='cool', vmin=loss_matrix.min(), vmax=loss_matrix.max())
 			ax.set_xticks([10, 20, 30, 40])
 			ax.set_yticks([10, 20, 30, 40])
 			ax.set_xticklabels([10, 20, 30, 40])

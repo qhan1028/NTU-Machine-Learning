@@ -2,27 +2,26 @@
 # Recurrent Neural Network (test)
 
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 import numpy as np
+np.set_printoptions(precision=4, suppress=True)
 import csv
 from sys import argv
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.models import load_model
 
-os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
-np.set_printoptions(precision=4, suppress=True)
-
 
 def read_test(filename):
 	
 	test_text = []
 	
-	with open(filename, 'r') as f:
+	with open(filename, 'rb') as f:
 		
 		for line in f:
-			idx, *text = line.split(',')
-			if idx == 'id': continue
-			test_text.append(''.join(text))
+			idx, *text = str(line).split(',')
+			if idx[2:] == 'id': continue
+			test_text.append(''.join(text)[:-3])
 
 	return test_text
 
@@ -32,7 +31,7 @@ def output_result(filename, result, categories):
 	string_result = []
 
 	for i, r in enumerate(result):
-		select_index = np.where(r >= 0.2)[0]
+		select_index = np.where(r >= 0.15)[0]
 		select_categories = categories[select_index]
 		string = ' '.join(select_categories)
 		string_result.append([i, string])
@@ -43,8 +42,8 @@ def output_result(filename, result, categories):
 		w.writerows(string_result)
 
 
-MAX_SEQUENCE_LEN = 150
-TOP_WORDS = 20000
+MAX_SEQUENCE_LEN = 200
+TOP_WORDS = 100000
 
 # argv: [1]test_data.csv [2]prediction.csv [3]model.h5
 def main():
