@@ -10,9 +10,10 @@ from sys import argv
 import keras.backend as K 
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
-from keras.layers import Embedding, Conv1D, MaxPooling1D
+from keras.layers import Embedding, Conv1D, MaxPooling1D, Flatten
 from keras.layers import LSTM, GRU, Dense, Dropout
 from keras.models import Sequential
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.optimizers import Adam
 
 
@@ -36,13 +37,14 @@ def read_train(filename):
 	train_text = []
 	train_label = []
 	
-	with open(filename, 'rb') as f:
-		
+	with open(filename, 'r', encoding='UTF-8') as f:
+	
+		f.readline()
 		for line in f:
-			idx, label, *text = str(line).split(',')
-			if idx[2:] == 'id': continue
-			categories, label = find_labels(categories, label[1:-1])
-			train_text.append(''.join(text)[:-3])
+			start = line.find('\"')
+			end = line.find('\"', start+1)
+			categories, label = find_labels(categories, line[start+1:end])
+			train_text.append(line[end+2:])
 			train_label.append(label)
 
 	for i, label in enumerate(train_label):
@@ -58,28 +60,28 @@ def read_test(filename):
 	
 	test_text = []
 	
-	with open(filename, 'rb') as f:
+	with open(filename, 'r', encoding='UTF-8') as f:
 		
+		f.readline()
 		for line in f:
-			idx, *text = str(line).split(',')
-			if idx[2:] == 'id': continue
-			test_text.append(''.join(text)[:-3])
+			start = line.find(',')
+			test_text.append(line[start+1:])
 
 	return test_text
 
 
-def read_word_vector(filename):
+def read_glove(filename):
 	
 	embedding_index = {}
 
-	with open(filename, 'rb') as f:
+	with open(filename, 'r', encoding='UTF-8') as f:
 		
 		i = 0
 		for line in f:
-			print('\r%d' % i, end='', flush=True)
-			values = str(line).split()
-			word = values[0][2:]
-			vector = np.array(values[1:-1] + [values[-1][:-3]], dtype='float32')
+			print('\r%d' % (i+1), end='', flush=True)
+			values = line.split(' ')
+			word = values[0]
+			vector = np.asarray(values[1:], dtype='float32')
 			embedding_index[word] = vector
 			i += 1
 		print('')
@@ -112,7 +114,8 @@ def f1_score(y_true,y_pred):
 	
 	precision=tp/(K.sum(y_pred))
 	recall=tp/(K.sum(y_true))
-	return 2*((precision*recall)/(precision+recall))
+	result = 2*((precision*recall)/(precision+recall))
+	return result
 
 
 EMBEDDING_DIM = 100
@@ -121,26 +124,29 @@ EMBEDDING_DIM = 100
 def main():
 
 	print('==================================================================')	
-	print('Read train data')
+	print('Read train data.')
 	train_text, train_label, categories = read_train(argv[1])
-	print('Read test data')
+	print('Read test data.')
 	test_text = read_test(argv[2])
+	all_corpus = train_text + test_text
+	print ('Find %d articles.' %(len(all_corpus)))
 
 	print('==================================================================')	
-	print('Tokenizer')
+	print('Tokenizer.')
 	tokenizer = Tokenizer()
-	tokenizer.fit_on_texts(train_text + test_text)	
-	print('Convert to index sequences')	
+	tokenizer.fit_on_texts(all_corpus)
+	word_index = tokenizer.word_index
+	print('Convert to index sequences.')	
 	train_sequences = tokenizer.texts_to_sequences(train_text)
 	test_sequences = tokenizer.texts_to_sequences(test_text)
-	print('Pad sequences')
+	print('Pad sequences.')
 	train_data = pad_sequences(train_sequences)
 	train_label = np.array(train_label)
 	MAX_SEQUENCE_LEN = train_data.shape[1]
 	test_data = pad_sequences(test_sequences, maxlen=MAX_SEQUENCE_LEN)
 
 	print('==================================================================')	
-	print('Split validation')
+	print('Split validation.')
 	(X_train, Y_train), (X_val, Y_val) = split_validation(train_data, train_label, 0.1)
 	print('Shape of X:', train_data.shape)
 	print('Shape of Y:', train_label.shape)
@@ -151,27 +157,24 @@ def main():
 	print('Shape of test data:', test_data.shape)
 	
 	print('==================================================================')	
-	print('Embedding Layer')
-	word_index = tokenizer.word_index
-	num_words = len(word_index)
-	embedding_matrix = np.zeros([num_words, EMBEDDING_DIM])
-	if '--load-embedding' in argv:
-		embedding_matrix = np.load('embedding_matrix.npy')
-	else:
-		embedding_dict = read_word_vector('glove.6b.100d.txt')	
-		for word, i in word_index.items():
-			if i < num_words:
-				embedding_vector = embedding_dict.get(word)
-				if embedding_vector is not None:
-					embedding_matrix[i] = embedding_vector
+	print('Embedding layer.')
+	num_words = len(word_index) + 1
+	embedding_matrix = np.zeros((num_words, EMBEDDING_DIM))
+	embedding_dict = read_glove('glove.6b.100d.txt')	
+	for word, i in word_index.items():
+		if i < num_words:
+			embedding_vector = embedding_dict.get(word)
+			if embedding_vector is not None:
+				embedding_matrix[i] = embedding_vector
 	
 	embedding_layer = Embedding(num_words, EMBEDDING_DIM, weights=[embedding_matrix], input_length=MAX_SEQUENCE_LEN, trainable=False)
 
 	print('==================================================================')	
-	print('Construct model')
+	print('Construct model.')
 	model = Sequential()
 	model.add(embedding_layer)
-	model.add(GRU(128, activation='tanh'))
+	model.add(Conv1D(128, 3, padding='same', activation='relu'))
+	model.add(GRU(512, activation='tanh', dropout=0.1))
 	model.add(Dense(256, activation='relu'))
 	model.add(Dropout(0.1))
 	model.add(Dense(128, activation='relu'))
@@ -181,27 +184,28 @@ def main():
 	model.add(Dense(38, activation='sigmoid'))
 	model.summary()
 
-	print('Compile Model')
+	print('Compile model.')
 	model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=[f1_score])
 
-	print('Train Model')
-	EPOCHS = 100
-	history = model.fit(X_train, Y_train, validation_data=(X_val, Y_val), batch_size=128, epochs=EPOCHS)
+	print('Train model.')
+	EPOCHS = 1000
+	early_stopping = EarlyStopping(monitor='val_loss', patience=20, verbose=1, mode='min')
+	check_point = ModelCheckpoint(filepath='model.h5', verbose=0, \
+								  save_best_only=True, save_weights_only=False, \
+								  monitor='val_loss', mode='min')
+	history = model.fit(X_train, Y_train, validation_data=(X_val, Y_val),\
+						batch_size=128, epochs=EPOCHS, callbacks=[early_stopping, check_point])
 	h = history.history
-
-	score = h['val_f1_score'][-1]
-	print('last val f1_score = %f' % score)
+	idx = np.argmin(h['val_loss'])
+	score = h['val_f1_score'][idx]
+	print('selected epoch: %d, val_f1_score: %f' % (idx+1, score))
 
 	print('==================================================================')	
-	print('Save')
-	model.save('{:.6f}'.format(score) + '_' + repr(EPOCHS) + 'e.h5')
-	
-	np.savez('{:.6}'.format(score) + '_' + repr(EPOCHS) + 'e_history.npz', h['f1_score'], h['val_f1_score'])
+	print('Save.')
+	os.rename('model.h5', '{:.6f}'.format(score) + '.h5')
+	np.savez('{:.6f}'.format(score) + '_history_%de.npz' % (idx+1), f1_score=h['f1_score'], val_h1_score=h['val_f1_score'])
 	np.save('categories.npy', categories)
-	np.save('texts.npy', train_text + test_text)
-	
-	if '--load-embedding' not in argv:
-		np.save('embedding_matrix.npy', embedding_matrix)
+	np.save('{:.6f}'.format(score) + '_word_index.npy', word_index)
 
 
 if __name__ == '__main__':
