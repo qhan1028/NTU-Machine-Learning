@@ -84,8 +84,7 @@ def main():
 
     print('==================================================================')    
     print('Output result. threshold: %f' % THRESHOLD)
-    #output_result(argv[2], result, categories)
-    output_result(argv[3][:-2] + 'csv', result, categories, THRESHOLD)
+    output_result(argv[2], result, categories)
 
 if __name__ == '__main__':
     main()
