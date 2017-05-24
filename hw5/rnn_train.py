@@ -53,7 +53,6 @@ def read_train(filename):
     index = np.argsort(count)
     for name, i in zip(np.array(categories)[index], count[index]):
         print('%4d' % i, name)
-    return
 
     for i, label in enumerate(train_label):
         binary_label = np.zeros(len(categories))
@@ -181,11 +180,14 @@ def main():
     print('Construct model.')
     model = Sequential()
     model.add(embedding_layer)
+    model.add(Conv1D(128, 3, padding='same', activation='relu'))
     model.add(GRU(128, activation='tanh', dropout=0.1))
+    model.add(Dense(256, activation='elu'))
+    model.add(Dropout(0.2))
     model.add(Dense(256, activation='relu'))
-    model.add(Dropout(0.1))
+    model.add(Dropout(0.2))
     model.add(Dense(128, activation='relu'))
-    model.add(Dropout(0.1))
+    model.add(Dropout(0.2))
     model.add(Dense(64, activation='relu'))
     model.add(Dropout(0.1))
     model.add(Dense(38, activation='sigmoid'))

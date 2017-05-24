@@ -1,1 +1,1 @@
-python rnn_test.py $1 $2
+python test_by_vote.py $1 $2

@@ -1,5 +1,5 @@
 # ML 2017 hw5
-# Recurrent Neural Network (test)
+# Recurrent Neural Network (test by vote)
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
@@ -26,6 +26,16 @@ def read_test(filename):
 
     return test_text
 
+def read_model_list(filename):
+
+    model_list = []
+    with open(filename, "r") as f:
+        for line in f:
+            weight = float(line.split()[0])
+            model_name = line.split()[1]
+            model_list.append((weight, model_name))
+
+    return model_list
 
 def output_result(filename, result, categories, threshold):
 
@@ -44,7 +54,6 @@ def output_result(filename, result, categories, threshold):
         w.writerow(['id', 'tags'])
         w.writerows(string_result)
 
-
 def f1_score(y_true,y_pred):
     thresh = 0.4
     y_pred = K.cast(K.greater(y_pred,thresh),dtype='float32')
@@ -58,7 +67,7 @@ def f1_score(y_true,y_pred):
 MAX_SEQUENCE_LEN = 306
 THRESHOLD = 0.3
 
-# argv: [1]test_data.csv [2]prediction.csv [3]model.h5
+# argv: [1]test_data.csv [2]prediction.csv
 def main():
 
     print('==================================================================')    
@@ -67,25 +76,30 @@ def main():
     categories = np.load('categories.npy')
 
     print('==================================================================')    
-    print('Load tokenizer.')
-    tokenizer = Tokenizer()
-    tokenizer.word_index = np.load(argv[3][:-3] + '_word_index.npy').item()
-    test_sequences = tokenizer.texts_to_sequences(test_text)
-    test_data = pad_sequences(test_sequences, maxlen=MAX_SEQUENCE_LEN)
-    print('Shape of test data:', test_data.shape)
-    
-    print('==================================================================')    
-    print('Load model.')
-    model = load_model(argv[3], custom_objects={'f1_score': f1_score})
-    model.summary()
+    print('Predict')
+    model_list = read_model_list('model_list.txt')
+    nb_models = len(model_list)
+    print('Total models: %d' % nb_models)
 
-    print('Predict.')
-    result = model.predict(test_data, verbose=1)
+    sum_result = np.zeros([len(test_text), len(categories)])
+    sum_weight = 0
+    for (weight, name) in model_list:
+
+        print('model: ' + name + ', weight: %f' % weight)
+        tokenizer = Tokenizer()
+        tokenizer.word_index = np.load(name[:-3] + '_word_index.npy').item()
+        test_sequences = tokenizer.texts_to_sequences(test_text)
+        test_data = pad_sequences(test_sequences, maxlen=MAX_SEQUENCE_LEN)
+    
+        model = load_model(name, custom_objects={'f1_score': f1_score})
+        sum_result += model.predict(test_data, verbose=0)
+        sum_weight += weight
+    
+    sum_result /= sum_weight
 
     print('==================================================================')    
     print('Output result. threshold: %f' % THRESHOLD)
-    #output_result(argv[2], result, categories)
-    output_result(argv[3][:-2] + 'csv', result, categories, THRESHOLD)
+    output_result(argv[2], sum_result, categories, THRESHOLD)
 
 if __name__ == '__main__':
     main()
