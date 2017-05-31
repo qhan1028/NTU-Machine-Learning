@@ -1,7 +1,8 @@
 # ML 2017 hw6
-# reader
+# Reader
 
 import numpy as np
+import csv
 
 def read_movie(filename):
 
@@ -34,8 +35,6 @@ def read_user(filename):
             users.append( (int(userID), gender, int(age), int(occupation), zipcode) )
     return users, len(users)
 
-
-import csv
 
 def read_train(filename):
     data = []
