@@ -8,7 +8,7 @@ import csv
 import numpy as np
 import keras.backend as K
 from keras.layers import Input, Embedding, Flatten
-from keras.layers.merge import dot
+from keras.layers.merge import dot, add
 from keras.models import Model
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from reader import *
@@ -40,15 +40,21 @@ def main():
 
     print('============================================================')
     print('Construct Model')
-    input_user = Input(shape=(1,))
-    input_movie = Input(shape=(1,))
-    embedding_user = Embedding(input_dim=n_users+1, output_dim=1024, input_length=1)(input_user)
-    embedding_movie = Embedding(input_dim=n_movies+1, output_dim=1024, input_length=1)(input_movie)
-    flatten_user = Flatten()(embedding_user)
-    flatten_movie = Flatten()(embedding_movie)
-    dot_layer = dot(inputs=[flatten_user, flatten_movie], axes=1)
+    in_u = Input(shape=(1,))
+    in_m = Input(shape=(1,))
+    emb_u = Embedding(input_dim=n_users+1, output_dim=1024, input_length=1)(in_u)
+    emb_m = Embedding(input_dim=n_movies+1, output_dim=1024, input_length=1)(in_m)
+    fl_u = Flatten()(emb_u)
+    fl_m = Flatten()(emb_m)
+    dot_layer = dot(inputs=[fl_u, fl_m], axes=1)
 
-    model = Model(inputs=[input_user, input_movie], outputs=dot_layer)
+    bu = Embedding(input_dim=n_users+1, output_dim=1, input_length=1)(in_u)
+    bm = Embedding(input_dim=n_movies+1, output_dim=1, input_length=1)(in_m)
+    fl_bu = Flatten()(bu)
+    fl_bm = Flatten()(bm)
+    sum_layer = add(inputs=[dot_layer, fl_bu, fl_bm])
+
+    model = Model(inputs=[in_u, in_m], outputs=sum_layer)
     model.summary()
 
     def rmse(y_true, y_pred):
