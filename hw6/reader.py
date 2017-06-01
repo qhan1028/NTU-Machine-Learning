@@ -4,6 +4,12 @@
 import numpy as np
 import csv
 
+def to_categorical(index, categories):
+    categorical = np.zeros(categories, dtype=int)
+    categorical[index] = 1
+    return list(categorical)
+
+
 def read_movie(filename):
 
     def genre_to_number(genres, all_genres):
@@ -14,26 +20,35 @@ def read_movie(filename):
             result.append( all_genres.index(g) )
         return result, all_genres
 
-    movies, all_genres = [], []
+
+    movies, all_genres = [[]] * 3953, []
     with open(filename, 'r', encoding='latin-1') as f:
         f.readline()
         for line in f:
             movieID, title, genre = line[:-1].split('::')
             genre_numbers, all_genres = genre_to_number(genre, all_genres)
-            movies.append( (int(movieID), genre_numbers) )
+            movies[int(movieID)] = genre_numbers
+    
+    categories = len(all_genres)
+    for i, m in enumerate(movies):
+        movies[i] = to_categorical(m, categories)
+
     return movies, all_genres, len(movies)
 
 
 def read_user(filename):
 
-    users = []
+    genders, ages, occupations = [[]]*6041, [[]]*6041, [[]]*6041
+    categories = 21
     with open(filename, 'r', encoding='latin-1') as f:
         f.readline()
         for line in f:
-            userID, gender, age, occupation, zipcode = line[:-1].split('::')
-            gender = 0 if gender is 'F' else 1
-            users.append( (int(userID), gender, int(age), int(occupation), zipcode) )
-    return users, len(users)
+            userID, gender, age, occu, zipcode = line[:-1].split('::')
+            genders[int(userID)] = 0 if gender is 'F' else 1
+            ages[int(userID)] = int(age)
+            occupations[int(userID)] = to_categorical(int(occu), categories)
+    
+    return genders, ages, occupations, len(genders)
 
 
 def read_train(filename):
