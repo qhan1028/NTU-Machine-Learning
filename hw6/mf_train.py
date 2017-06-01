@@ -54,23 +54,23 @@ def main():
     
     print('============================================================')
     print('Construct Model')
-    in_uid = Input(shape=(1,), name='user_id')      # user id
-    in_mid = Input(shape=(1,), name='movie_id')     # movie id
-    in_ug = Input(shape=(1,), name='user_gender')   # user gender
-    in_ua = Input(shape=(1,), name='user_age')      # user age
-    in_mg = Input(shape=(18,), name='movie_genre')  # movie genre
+    in_uid = Input(shape=(1,), name='UserID')      # user id
+    in_mid = Input(shape=(1,), name='MovieID')     # movie id
+    in_ug = Input(shape=(1,), name='UserGender')   # user gender
+    in_ua = Input(shape=(1,), name='UserAge')      # user age
+    in_mg = Input(shape=(18,), name='MovieGenre')  # movie genre
     emb_uid = Embedding(input_dim=n_users, output_dim=128, input_length=1)(in_uid)
     emb_mid = Embedding(input_dim=n_movies, output_dim=128, input_length=1)(in_mid)
     emb_ug = Embedding(input_dim=n_genders, output_dim=128, input_length=1)(in_ug)
     emb_ua = Embedding(input_dim=n_ages, output_dim=128, input_length=1)(in_ua)
-    fl_uid = Flatten()(emb_uid)
-    fl_mid = Flatten()(emb_mid)
-    fl_ug = Flatten()(emb_ug)
-    fl_ua = Flatten()(emb_ua)
+    fl_uid = Flatten(name='UserID')(emb_uid)
+    fl_mid = Flatten(name='MovieID')(emb_mid)
+    fl_ug = Flatten(name='UserGender')(emb_ug)
+    fl_ua = Flatten(name='UserAge')(emb_ua)
 
-    x = Dense(512, activation='elu')(in_mg)
-    x = Dense(256, activation='elu')(x)
-    fl_mg = Dense(128, activation='elu')(x)
+    x = Dense(512, activation='elu', name='MovieGenre_dense1')(in_mg)
+    x = Dense(256, activation='elu', name='MovieGenre_dense2')(x)
+    fl_mg = Dense(128, activation='elu', name='MovieGenre_dense3')(x)
 
     dot_id = dot(inputs=[fl_uid, fl_mid], axes=1)
     dot_uid_ug = dot(inputs=[fl_uid, fl_ug], axes=1)
