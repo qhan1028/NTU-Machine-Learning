@@ -8,7 +8,7 @@ import csv
 import numpy as np
 import keras.backend as K
 from keras.layers import Input, Embedding, Flatten, Dense
-from keras.layers.merge import dot, add
+from keras.layers.merge import dot, add, concatenate
 from keras.models import Model
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from reader import *
@@ -83,9 +83,14 @@ def main():
     dot_ug_mg = dot(inputs=[fl_ug, fl_mg], axes=1)
     dot_ua_mg = dot(inputs=[fl_ua, fl_mg], axes=1)
 
-    sum_dot = add(inputs=[dot_id, dot_uid_ug, dot_uid_ua, dot_uid_mg, \
-                          dot_mid_ug, dot_mid_ua, dot_mid_mg, dot_ug_ua, \
-                          dot_ug_mg, dot_ua_mg])
+    con_dot = concatenate(inputs=[dot_id, dot_uid_ug, dot_uid_ua, dot_uid_mg, \
+                                  dot_mid_ug, dot_mid_ua, dot_mid_mg, dot_ug_ua, \
+                                  dot_ug_mg, dot_ua_mg])
+    
+    x = Dense(512, activation='elu')(x)
+    x = Dense(256, activation='elu')(x)
+    x = Dense(128, activation='elu')(x)
+    dense_dot = Dense(1, activation='linear')(x)
 
     bu = Embedding(input_dim=n_users, output_dim=1, input_length=1)(in_uid)
     bm = Embedding(input_dim=n_movies, output_dim=1, input_length=1)(in_mid)
@@ -93,9 +98,9 @@ def main():
     fl_bm = Flatten()(bm)
     sum_bias = add(inputs=[fl_bu, fl_bm])
 
-    sum_layer = add(inputs=[sum_dot, sum_bias])
+    out = add(inputs=[dense_dot, sum_bias])
 
-    model = Model(inputs=[in_uid, in_mid, in_ug, in_ua, in_mg], outputs=sum_layer)
+    model = Model(inputs=[in_uid, in_mid, in_ug, in_ua, in_mg], outputs=out)
     model.summary()
 
     def rmse(y_true, y_pred):
