@@ -54,11 +54,11 @@ def main():
     
     print('============================================================')
     print('Construct Model')
-    in_uid = Input(shape=(1,), name='user id')      # user id
-    in_mid = Input(shape=(1,), name='movie id')     # movie id
-    in_ug = Input(shape=(1,), name='user gender')   # user gender
-    in_ua = Input(shape=(1,), name='user age')      # user age
-    in_mg = Input(shape=(18,), name='movie genre')  # movie genre
+    in_uid = Input(shape=(1,), name='user_id')      # user id
+    in_mid = Input(shape=(1,), name='movie_id')     # movie id
+    in_ug = Input(shape=(1,), name='user_gender')   # user gender
+    in_ua = Input(shape=(1,), name='user_age')      # user age
+    in_mg = Input(shape=(18,), name='movie_genre')  # movie genre
     emb_uid = Embedding(input_dim=n_users, output_dim=128, input_length=1)(in_uid)
     emb_mid = Embedding(input_dim=n_movies, output_dim=128, input_length=1)(in_mid)
     emb_ug = Embedding(input_dim=n_genders, output_dim=128, input_length=1)(in_ug)
@@ -111,7 +111,7 @@ def main():
    
     print('============================================================')
     print('Train Model')
-    es = EarlyStopping(monitor='val_rmse', patience=5, verbose=1, mode='min')
+    es = EarlyStopping(monitor='val_rmse', patience=20, verbose=1, mode='min')
     cp = ModelCheckpoint(monitor='val_rmse', save_best_only=True, save_weights_only=False, \
                          mode='min', filepath='mf_model.h5')
     history = model.fit([user_id, movie_id, user_genders, user_ages, movie_genres], Y_rating, \
