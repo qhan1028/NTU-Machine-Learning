@@ -24,12 +24,27 @@ def main():
    
     print('============================================================')
     print('Read Data')
+    movies, all_genres, n_movies = read_movie(DATA_DIR + '/movies.csv')
+    genders, ages, occupations, n_users = read_user(DATA_DIR + '/users.csv')
     test = read_test(DATA_DIR + '/test.csv')
-    ID = np.array(test[:, 0], dtype='int32').reshape(-1, 1)
-    X_user = np.array(test[:, 1], dtype='int32').reshape(-1, 1)
-    X_movie = np.array(test[:, 2], dtype='int32').reshape(-1, 1)
+    ID = np.array(test[:, 0], dtype=int).reshape(-1, 1)
+    print('n_movies:', n_movies, ', n_users:', n_users)
     print('Test data len:', len(test))
 
+    print('============================================================')
+    print('Get User/Movie ID')
+    user_id = np.array(test[:, 1], dtype=int)
+    movie_id = np.array(test[:, 2], dtype=int)
+    
+    print('Get User/Movie Features')
+    user_genders = np.array(genders)[user_id].reshape(-1, 1)
+    user_ages = np.array(ages)[user_id].reshape(-1, 1)
+    movie_genres = np.array(movies)[movie_id]
+    user_id = user_id.reshape(-1, 1)
+    movie_id = movie_id.reshape(-1, 1)
+
+    features = np.concatenate((user_id, user_genders, user_ages, movie_id, movie_genres), axis=1)
+    print(features[:20])
     print('============================================================')
     print('Load Model')
 
@@ -42,7 +57,7 @@ def main():
    
     print('============================================================')
     print('Predict')
-    result = model.predict([X_user, X_movie])
+    result = model.predict([user_id, movie_id, user_genders, user_ages, movie_genres])
    
     print('============================================================')
     print('Output Result')
