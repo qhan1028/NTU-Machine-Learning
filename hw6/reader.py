@@ -71,3 +71,35 @@ def read_test(filename):
             dataID, userID, movieID = row
             data.append( [int(dataID), int(userID), int(movieID)] )
     return np.array(data)
+
+
+def preprocess(mode, data, genders, ages, movies):
+
+    if mode == 'train':
+        print('Shuffle Data')
+        np.random.seed(2048)
+        index = np.random.permutation(len(data))
+        data = data[index]
+
+    print('Get User/Movie ID')
+    user_id = np.array(data[:, 1], dtype=int)
+    movie_id = np.array(data[:, 2], dtype=int)
+    
+    print('Get User/Movie Features')
+    user_genders = np.array(genders)[user_id].reshape(-1, 1)
+    user_ages = np.array(ages)[user_id].reshape(-1, 1)
+    movie_genres = np.array(movies)[movie_id]
+    user_id = user_id.reshape(-1, 1)
+    movie_id = movie_id.reshape(-1, 1)
+
+    print('Normalize Ages')
+    age_mean = np.mean(user_ages)
+    age_std = np.std(user_ages)
+    user_ages = (user_ages - age_mean) / age_std
+
+    Y_rating = []
+    if mode == 'train':
+        print('Get Rating')
+        Y_rating = data[:, 3].reshape(-1, 1)
+
+    return user_id, movie_id, user_genders, user_ages, movie_genres, Y_rating

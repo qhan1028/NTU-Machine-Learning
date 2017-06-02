@@ -26,35 +26,17 @@ def main():
     print('Train data len:', len(train))
 
     print('============================================================')
-    print('Shuffle Data')
-    np.random.seed(2048)
-    index = np.random.permutation(len(train))
-    train = train[index]
-
-    print('============================================================')
-    print('Get User/Movie ID')
-    user_id = np.array(train[:, 1], dtype=int)
-    movie_id = np.array(train[:, 2], dtype=int)
-    
-    print('Get User/Movie Features')
-    user_genders = np.array(genders)[user_id].reshape(-1, 1)
-    user_ages = np.array(ages)[user_id].reshape(-1, 1)
-    movie_genres = np.array(movies)[movie_id]
-    user_id = user_id.reshape(-1, 1)
-    movie_id = movie_id.reshape(-1, 1)
-
-    print('Get Y')
-    Y_rating = train[:, 3].reshape(-1, 1)
-    print('Y_rating:', Y_rating.shape)
+    print('Preprocess Data')
+    user_id, movie_id, user_genders, user_ages, movie_genres, Y_rating = \
+        preprocess('train', train, genders, ages, movies)
 
     n_users = np.max(user_id) + 1
     n_movies = np.max(movie_id) + 1
     n_genders = 2
-    n_ages = np.max(user_ages) + 1
     
     print('============================================================')
     print('Construct Model')
-    EMB_DIM = 128
+    EMB_DIM = 1024
     print('Embedding Dimension:', EMB_DIM)
     in_uid = Input(shape=[1], name='UserID')      # user id
     in_mid = Input(shape=[1], name='MovieID')     # movie id
@@ -64,41 +46,30 @@ def main():
     emb_uid = Embedding(n_users, EMB_DIM, embeddings_initializer='random_normal')(in_uid)
     emb_mid = Embedding(n_movies, EMB_DIM, embeddings_initializer='random_normal')(in_mid)
     emb_ug = Embedding(n_genders, EMB_DIM, embeddings_initializer='random_normal')(in_ug)
-    emb_ua = Embedding(n_ages, EMB_DIM, embeddings_initializer='random_normal')(in_ua)
     fl_uid = Flatten()(emb_uid)
     fl_mid = Flatten()(emb_mid)
     fl_ug = Flatten()(emb_ug)
-    fl_ua = Flatten()(emb_ua)
 
     fl_mg = Dense(EMB_DIM, activation='linear', name='MovieGenre_dense')(in_mg)
 
     dot_id = dot(inputs=[fl_uid, fl_mid], axes=1)
     dot_uid_ug = dot(inputs=[fl_uid, fl_ug], axes=1)
-    dot_uid_ua = dot(inputs=[fl_uid, fl_ua], axes=1)
     dot_uid_mg = dot(inputs=[fl_uid, fl_mg], axes=1)
     dot_mid_ug = dot(inputs=[fl_mid, fl_ug], axes=1)
-    dot_mid_ua = dot(inputs=[fl_mid, fl_ua], axes=1)
     dot_mid_mg = dot(inputs=[fl_mid, fl_mg], axes=1)
-    dot_ug_ua = dot(inputs=[fl_ug, fl_ua], axes=1)
     dot_ug_mg = dot(inputs=[fl_ug, fl_mg], axes=1)
-    dot_ua_mg = dot(inputs=[fl_ua, fl_mg], axes=1)
 
-    con_dot = concatenate(inputs=[dot_id, dot_uid_mg, \
-                                  dot_mid_ug, dot_mid_ua, \
-                                  dot_ug_mg, dot_ua_mg])
+    con_dot = concatenate(inputs=[dot_id, dot_uid_ug, dot_uid_mg, dot_mid_ug, \
+                                  dot_mid_mg, dot_ug_mg, in_ua] )
     
     dense_dot = Dense(1, activation='linear')(con_dot)
 
     emb_uid = Embedding(n_users, 1, embeddings_initializer='zeros')(in_uid)
     emb_mid = Embedding(n_movies, 1, embeddings_initializer='zeros')(in_mid)
-    emb_ug = Embedding(n_genders, 1, embeddings_initializer='zeros')(in_ug)
-    emb_ua = Embedding(n_ages, 1, embeddings_initializer='zeros')(in_ua)
     bias_uid = Flatten()(emb_uid)
     bias_mid = Flatten()(emb_mid)
-    bias_ug = Flatten()(emb_ug)
-    bias_ua = Flatten()(emb_ua)
     
-    out = add(inputs=[bias_uid, bias_mid, bias_ug, bias_ua, dense_dot])
+    out = add(inputs=[bias_uid, bias_mid, dense_dot])
 
     model = Model(inputs=[in_uid, in_mid, in_ug, in_ua, in_mg], outputs=out)
     model.summary()

@@ -32,19 +32,10 @@ def main():
     print('Test data len:', len(test))
 
     print('============================================================')
-    print('Get User/Movie ID')
-    user_id = np.array(test[:, 1], dtype=int)
-    movie_id = np.array(test[:, 2], dtype=int)
-    
-    print('Get User/Movie Features')
-    user_genders = np.array(genders)[user_id].reshape(-1, 1)
-    user_ages = np.array(ages)[user_id].reshape(-1, 1)
-    movie_genres = np.array(movies)[movie_id]
-    user_id = user_id.reshape(-1, 1)
-    movie_id = movie_id.reshape(-1, 1)
+    print('Preprocess Data')
+    user_id, movie_id, user_genders, user_ages, movie_genres, _Y = \
+        preprocess('test', test, genders, ages, movies)
 
-    features = np.concatenate((user_id, user_genders, user_ages, movie_id, movie_genres), axis=1)
-    print(features[:20])
     print('============================================================')
     print('Load Model')
 
