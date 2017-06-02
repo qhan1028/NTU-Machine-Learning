@@ -101,11 +101,11 @@ def main():
 			filepath = "./new_model/{epoch:02d}_{val_acc:.6f}.h5"
 			cp = ModelCheckpoint(filepath, verbose=1)
 			history = model.fit_generator(datagen.flow(X[VAL:], Y[VAL:], batch_size=BATCH, seed=1028), callbacks=[cp],\
-																		samples_per_epoch=len(X[VAL:]), epochs=EPOCHS, verbose=1, validation_data=(Xv, Yv))
+										  samples_per_epoch=len(X[VAL:]), epochs=EPOCHS, verbose=1, validation_data=(Xv, Yv))
 			os.rename("new_model", "{:.6f}".format(history.history['val_acc'][-1]))
 		else:
 			history = model.fit_generator(datagen.flow(X[VAL:], Y[VAL:], batch_size=BATCH, seed=1028),\
-																		samples_per_epoch=len(X[VAL:]), epochs=EPOCHS, verbose=1, validation_data=(Xv, Yv))
+										  samples_per_epoch=len(X[VAL:]), epochs=EPOCHS, verbose=1, validation_data=(Xv, Yv))
 		score.append(history.history['val_acc'][-1])
 		print("train accuracy (last) = " + "{:.6f}".format(score[1]))
 		if SAVE_HISTORY:

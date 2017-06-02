@@ -1,6 +1,12 @@
-/hw1_test/*
-/hw2_test/*
-/hw3_test/*
+*/__pycache__/*
+hw1_test/*
+*/hw2_test/*
+hw3/model.pages
+hw4/faceExpressionDatabase/*
+hw4/hand/*
+hw4/maxent_treebank_pos_tagger/*
+hw4/phrases
+spec/*
 *.csv
 *.h5
 *.swp
@@ -9,3 +15,7 @@
 *.npz
 *.txt
 *.bat
+*.bin
+*.pdf
+*.zip
+*.tar
