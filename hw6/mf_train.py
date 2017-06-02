@@ -8,76 +8,94 @@ import csv
 import numpy as np
 import keras.backend as K
 from keras.layers import Input, Embedding, Flatten, Dense
-from keras.layers.merge import dot, add, concatenate
+from keras.layers.merge import Dot, Add, Concatenate
 from keras.models import Model, load_model
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from reader import *
 
 DATA_DIR = './data'
 
+
+def write_result(filename, output):
+    with open(filename, 'w') as f:
+        writer = csv.writer(f)
+        writer.writerow(['TestDataID', 'Rating'])
+        writer.writerows(output)
+
+
 def main():
    
     print('============================================================')
     print('Read Data')
-    movies, all_genres, n_movies = read_movie(DATA_DIR + '/movies.csv')
-    genders, ages, occupations, n_users = read_user(DATA_DIR + '/users.csv')
+    movies, all_genres = read_movie(DATA_DIR + '/movies.csv')
+    genders, ages, occupations = read_user(DATA_DIR + '/users.csv')
+    print('movies:', np.array(movies).shape)
+    print('genders:', np.array(genders).shape)
+    print('ages:', np.array(ages).shape)
+    print('occupations:', np.array(occupations).shape)
+
     train = read_train(DATA_DIR + '/train.csv')
-    print('n_movies:', n_movies, ', n_users:', n_users)
     print('Train data len:', len(train))
 
     print('============================================================')
     print('Preprocess Data')
-    user_id, movie_id, user_genders, user_ages, movie_genres, Y_rating = \
-        preprocess('train', train, genders, ages, movies)
+    userID, movieID, userGender, userAge, userOccu, movieGenre, Y = \
+        preprocess(train, genders, ages, occupations, movies)
+    print('userID:', userID.shape)
+    print('movieID:', movieID.shape)
+    print('userGender:', userGender.shape)
+    print('userAge:', userAge.shape)
+    print('userOccu:', userOccu.shape)
+    print('movieGenre:', movieGenre.shape)
+    print('Y:', Y.shape)
 
-    n_users = np.max(user_id) + 1
-    n_movies = np.max(movie_id) + 1
+    n_users = np.max(userID) + 1
+    n_movies = np.max(movieID) + 1
     n_genders = 2
-    
+    n_ages = np.max(userAge) + 1
+
     print('============================================================')
     print('Construct Model')
-    EMB_DIM = 1024
+    EMB_DIM = 512
     print('Embedding Dimension:', EMB_DIM)
-    in_uid = Input(shape=[1], name='UserID')      # user id
-    in_mid = Input(shape=[1], name='MovieID')     # movie id
-    in_ug = Input(shape=[1], name='UserGender')   # user gender
-    in_ua = Input(shape=[1], name='UserAge')      # user age
-    in_mg = Input(shape=[18], name='MovieGenre')  # movie genre
-    emb_uid = Embedding(n_users, EMB_DIM, embeddings_initializer='random_normal')(in_uid)
-    emb_mid = Embedding(n_movies, EMB_DIM, embeddings_initializer='random_normal')(in_mid)
-    emb_ug = Embedding(n_genders, EMB_DIM, embeddings_initializer='random_normal')(in_ug)
-    fl_uid = Flatten()(emb_uid)
-    fl_mid = Flatten()(emb_mid)
-    fl_ug = Flatten()(emb_ug)
-
-    fl_mg = Dense(EMB_DIM, activation='linear', name='MovieGenre_dense')(in_mg)
-
-    dot_id = dot(inputs=[fl_uid, fl_mid], axes=1)
-    dot_uid_ug = dot(inputs=[fl_uid, fl_ug], axes=1)
-    dot_uid_mg = dot(inputs=[fl_uid, fl_mg], axes=1)
-    dot_mid_ug = dot(inputs=[fl_mid, fl_ug], axes=1)
-    dot_mid_mg = dot(inputs=[fl_mid, fl_mg], axes=1)
-    dot_ug_mg = dot(inputs=[fl_ug, fl_mg], axes=1)
-
-    con_dot = concatenate(inputs=[dot_id, dot_uid_ug, dot_uid_mg, dot_mid_ug, \
-                                  dot_mid_mg, dot_ug_mg, in_ua] )
-    
-    dense_dot = Dense(1, activation='linear')(con_dot)
-
-    emb_uid = Embedding(n_users, 1, embeddings_initializer='zeros')(in_uid)
-    emb_mid = Embedding(n_movies, 1, embeddings_initializer='zeros')(in_mid)
-    bias_uid = Flatten()(emb_uid)
-    bias_mid = Flatten()(emb_mid)
-    
-    out = add(inputs=[bias_uid, bias_mid, dense_dot])
-
-    model = Model(inputs=[in_uid, in_mid, in_ug, in_ua, in_mg], outputs=out)
+    # inputs
+    in_userID = Input(shape=(1,))       # user id
+    in_movieID = Input(shape=(1,))      # movie id
+    in_userGender = Input(shape=(1,))   # user gender
+    in_userAge = Input(shape=(1,))      # user age
+    in_userOccu = Input(shape=(21,))    # user occupation
+    in_movieGenre = Input(shape=(18,))  # movie genre
+    # embeddings
+    emb_userID = Embedding(n_users, EMB_DIM)(in_userID)
+    emb_movieID = Embedding(n_movies, EMB_DIM)(in_movieID)
+    vec_userID = Flatten()(emb_userID)
+    vec_movieID = Flatten()(emb_movieID)
+    vec_userOccu = Dense(EMB_DIM, activation='linear')(in_userOccu)
+    vec_movieGenre = Dense(EMB_DIM, activation='linear')(in_movieGenre)
+    # dot
+    dot1 = Dot(axes=1)([vec_userID, vec_movieID])
+    dot2 = Dot(axes=1)([vec_userID, vec_userOccu])
+    dot3 = Dot(axes=1)([vec_userID, vec_movieGenre])
+    dot4 = Dot(axes=1)([vec_movieID, vec_userOccu])
+    dot5 = Dot(axes=1)([vec_movieID, vec_movieGenre])
+    dot6 = Dot(axes=1)([vec_userOccu, vec_movieGenre])
+    # concatenate
+    con_dot = Concatenate()([dot1, dot2, dot3, dot4, dot5, dot6, \
+                             in_userGender, in_userAge])
+    dense_out = Dense(1, activation='linear')(con_dot)
+    # bias
+    emb2_userID = Embedding(n_users, 1, embeddings_initializer='zeros')(in_userID)
+    emb2_movieID = Embedding(n_movies, 1, embeddings_initializer='zeros')(in_movieID)
+    bias_userID = Flatten()(emb2_userID)
+    bias_movieID = Flatten()(emb2_movieID)
+    # output 
+    out = Add()([bias_userID, bias_movieID, dense_out])
+    # model
+    model = Model(inputs=[in_userID, in_movieID, in_userGender, in_userAge, \
+                          in_userOccu, in_movieGenre], outputs=out)
     model.summary()
 
-    def rmse(y_true, y_pred):
-        mse = K.mean((y_pred - y_true) ** 2)
-        return K.sqrt(mse)
-
+    def rmse(y_true, y_pred): return K.sqrt( K.mean((y_pred - y_true)**2) )
     model.compile(optimizer='adam', loss='mse', metrics=[rmse])
    
     print('============================================================')
@@ -85,20 +103,32 @@ def main():
     es = EarlyStopping(monitor='val_rmse', patience=10, verbose=1, mode='min')
     cp = ModelCheckpoint(monitor='val_rmse', save_best_only=True, save_weights_only=False, \
                          mode='min', filepath='mf_model.h5')
-    history = model.fit([user_id, movie_id, user_genders, user_ages, movie_genres], Y_rating, \
-                        epochs=200, verbose=1, batch_size=10000, validation_split=0.1, callbacks=[es, cp])
+    history = model.fit([userID, movieID, userGender, userAge, userOccu, movieGenre], Y, \
+                        epochs=200, verbose=1, batch_size=10000, callbacks=[es, cp], \
+                        validation_split=0.05)
     H = history.history
-   
-    print('============================================================')
-    print('Evaluate Model')
-    model = load_model('mf_model.h5', custom_objects={'rmse': rmse})
-    score = model.evaluate([user_id, movie_id, user_genders, user_ages, movie_genres], Y_rating, \
-                           batch_size=10000)
-    print('Score:', score)
 
     print('============================================================')
+    print('Test Model')
+    model = load_model('mf_model.h5', custom_objects={'rmse': rmse})
+    test = read_test(DATA_DIR + '/test.csv')
+    ID = np.array(test[:, 0]).reshape(-1, 1)
+    print('Test data len:', len(test))
+    
+    userID, movieID, userGender, userAge, userOccu, movieGenre, _Y = \
+        preprocess(test, genders, ages, occupations, movies)
+
+    result = model.predict([userID, movieID, userGender, userAge, userOccu, movieGenre])
+
+    print('Output Result')
+    rating = np.clip(result, 1, 5).reshape(-1, 1)
+    output = np.array( np.concatenate((ID, rating), axis=1))
+    write_result('direct_test.csv', output)
+    print(output[:20])
+   
+    print('============================================================')
     print('Save Result')
-    np.savez('mf_history.npz', rmse=H['rmse'])
+    np.savez('mf_history.npz', rmse=H['rmse'], val_rmse=H['val_rmse'])
 
 
 if __name__ == '__main__':

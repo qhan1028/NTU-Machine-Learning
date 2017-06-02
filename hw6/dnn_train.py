@@ -46,6 +46,7 @@ def main():
     fl_u = Flatten()(emb_u)
     fl_m = Flatten()(emb_m)
     x = concatenate(inputs=[fl_u, fl_m])
+    x = Dense(512, activation='elu')(x)
     x = Dense(256, activation='elu')(x)
     x = Dense(128, activation='elu')(x)
     x = Dense(64, activation='elu')(x)

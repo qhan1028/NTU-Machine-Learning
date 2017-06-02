@@ -33,12 +33,12 @@ def read_movie(filename):
     for i, m in enumerate(movies):
         movies[i] = to_categorical(m, categories)
 
-    return movies, all_genres, len(movies)
+    return movies, all_genres
 
 
 def read_user(filename):
 
-    genders, ages, occupations = [[]]*6041, [[]]*6041, [[]]*6041
+    genders, ages, occupations = [[]]*6041, [[]]*6041, [ [0]*21 ]*6041
     categories = 21
     with open(filename, 'r', encoding='latin-1') as f:
         f.readline()
@@ -48,7 +48,7 @@ def read_user(filename):
             ages[int(userID)] = int(age)
             occupations[int(userID)] = to_categorical(int(occu), categories)
     
-    return genders, ages, occupations, len(genders)
+    return genders, ages, occupations
 
 
 def read_train(filename):
@@ -58,7 +58,7 @@ def read_train(filename):
         reader = csv.reader(f)
         for row in reader:
             dataID, userID, movieID, rating = row
-            data.append( [int(dataID), int(userID), int(movieID), float(rating)] )
+            data.append( [int(dataID), int(userID), int(movieID), int(rating)] )
     return np.array(data)
 
 
@@ -69,37 +69,36 @@ def read_test(filename):
         reader = csv.reader(f)
         for row in reader:
             dataID, userID, movieID = row
-            data.append( [int(dataID), int(userID), int(movieID)] )
+            data.append( [dataID, int(userID), int(movieID)] )
     return np.array(data)
 
 
-def preprocess(mode, data, genders, ages, movies):
+def preprocess(data, genders, ages, occupations, movies):
 
-    if mode == 'train':
+    if data.shape[1] == 4:
         print('Shuffle Data')
-        np.random.seed(2048)
+        np.random.seed(3318)
         index = np.random.permutation(len(data))
         data = data[index]
 
-    print('Get User/Movie ID')
-    user_id = np.array(data[:, 1], dtype=int)
-    movie_id = np.array(data[:, 2], dtype=int)
-    
-    print('Get User/Movie Features')
-    user_genders = np.array(genders)[user_id].reshape(-1, 1)
-    user_ages = np.array(ages)[user_id].reshape(-1, 1)
-    movie_genres = np.array(movies)[movie_id]
-    user_id = user_id.reshape(-1, 1)
-    movie_id = movie_id.reshape(-1, 1)
+    print('Get ID')
+    userID = np.array(data[:, 1], dtype=int)
+    movieID = np.array(data[:, 2], dtype=int)
+
+    print('Get Features')
+    userGender = np.array(genders)[userID]
+    userAge = np.array(ages)[userID]
+    userOccu = np.array(occupations)[userID]
+    movieGenre = np.array(movies)[movieID]
 
     print('Normalize Ages')
-    age_mean = np.mean(user_ages)
-    age_std = np.std(user_ages)
-    user_ages = (user_ages - age_mean) / age_std
+    mean = np.mean(userAge)
+    std = np.std(userAge)
+    userAge = (userAge - mean) / std
 
-    Y_rating = []
-    if mode == 'train':
-        print('Get Rating')
-        Y_rating = data[:, 3].reshape(-1, 1)
+    Rating = []
+    if data.shape[1] == 4:
+        print('Get Ratings')
+        Rating = data[:, 3].reshape(-1, 1)
 
-    return user_id, movie_id, user_genders, user_ages, movie_genres, Y_rating
+    return userID, movieID, userGender, userAge, userOccu, movieGenre, Rating
