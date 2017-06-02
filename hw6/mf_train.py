@@ -123,12 +123,14 @@ def main():
     print('Output Result')
     rating = np.clip(result, 1, 5).reshape(-1, 1)
     output = np.array( np.concatenate((ID, rating), axis=1))
-    write_result('direct_test.csv', output)
+    write_result('mf_direct_test.csv', output)
     print(output[:20])
    
     print('============================================================')
     print('Save Result')
-    np.savez('mf_history.npz', rmse=H['rmse'], val_rmse=H['val_rmse'])
+    best_val = str( round(np.min(H['val_rmse']), 6) )
+    np.savez('mf_' + best_val + '_history.npz', rmse=H['rmse'], val_rmse=H['val_rmse'])
+    os.rename('mf_model.h5', 'mf_' + best_val + '.h5')
 
 
 if __name__ == '__main__':

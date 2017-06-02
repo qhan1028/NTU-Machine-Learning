@@ -18,8 +18,9 @@ def write_result(filename, output):
 
 DATA_DIR = sys.argv[1]
 OUTPUT_FILE = sys.argv[2]
+MODEL = sys.argv[3]
 
-# argv: [1]data directory [2]prediction file
+# argv: [1]data directory [2]prediction file [3]model
 def main():
    
     print('============================================================')
@@ -45,19 +46,18 @@ def main():
 
     def rmse(y_true, y_pred): return K.sqrt( K.mean((y_pred - y_true)**2) )
 
-    model = load_model('dnn_model.h5', custom_objects={'rmse': rmse})
+    model = load_model(MODEL, custom_objects={'rmse': rmse})
     model.summary()
    
     print('============================================================')
     print('Predict')
-    #result = model.predict([userID, movieID, userGender, userAge, userOccu, movieGenre])
-    result = model.predict([userID, movieID])
+    result = model.predict([userID, movieID, userGender, userAge, userOccu, movieGenre])
+    #result = model.predict([userID, movieID])
    
     print('============================================================')
     print('Output Result')
     rating = np.clip(result, 1, 5).reshape(-1, 1)
     output = np.array(np.concatenate((ID, rating), axis=1))
-    print(output[:20])
     write_result(OUTPUT_FILE, output)
 
 

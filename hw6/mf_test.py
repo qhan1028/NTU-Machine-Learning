@@ -18,8 +18,9 @@ def write_result(filename, output):
 
 DATA_DIR = sys.argv[1]
 OUTPUT_FILE = sys.argv[2]
+MODEL = sys.argv[3]
 
-# argv: [1]data directory [2]prediction file
+# argv: [1]data directory [2]prediction file [3]model
 def main():
    
     print('============================================================')
@@ -45,7 +46,7 @@ def main():
 
     def rmse(y_true, y_pred): return K.sqrt( K.mean((y_pred - y_true)**2) )
 
-    model = load_model('mf_model.h5', custom_objects={'rmse': rmse})
+    model = load_model(MODEL, custom_objects={'rmse': rmse})
     model.summary()
    
     print('============================================================')
