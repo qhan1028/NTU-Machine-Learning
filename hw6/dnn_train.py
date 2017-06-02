@@ -15,64 +15,103 @@ from reader import *
 
 DATA_DIR = './data'
 
+
+def write_result(filename, output):
+    with open(filename, 'w') as f:
+        writer = csv.writer(f)
+        writer.writerow(['TestDataID', 'Rating'])
+        writer.writerows(output)
+
+
 def main():
    
     print('============================================================')
-    print('Read Data')
-    movies, all_genres, movies_len = read_movie(DATA_DIR + '/movies.csv')
-    users, users_len = read_user(DATA_DIR + '/users.csv')
+    print('Read Data', flush=True)
+    movies, all_genres = read_movie(DATA_DIR + '/movies.csv')
+    genders, ages, occupations = read_user(DATA_DIR + '/users.csv')
+    print('movies:', np.array(movies).shape)
+    print('genders:', np.array(genders).shape)
+    print('ages:', np.array(ages).shape)
+    print('occupations:', np.array(occupations).shape)
+
     train = read_train(DATA_DIR + '/train.csv')
-    print('Movies:', movies_len, '\nUsers:', users_len, '\nTrain data:', len(train))
+    print('Train data len:', len(train))
 
     print('============================================================')
-    print('Shuffle Data')
-    index = np.random.permutation(len(train))
-    train = train[index]
+    print('Preprocess Data', flush=True)
+    userID, movieID, userGender, userAge, userOccu, movieGenre, Y = \
+        preprocess(train, genders, ages, occupations, movies)
+    print('userID:', userID.shape)
+    print('movieID:', movieID.shape)
+    print('userGender:', userGender.shape)
+    print('userAge:', userAge.shape)
+    print('userOccu:', userOccu.shape)
+    print('movieGenre:', movieGenre.shape)
+    print('Y:', Y.shape)
 
-    print('============================================================')
-    print('Get X, Y')
-    X_user = np.array(train[:, 1], dtype='int32').reshape(-1, 1)
-    X_movie = np.array(train[:, 2], dtype='int32').reshape(-1, 1)
-    Y = train[:, 3].reshape(-1, 1)
-    dim_u, dim_m = np.max(X_user), np.max(X_movie)
-    print('dim_u:', dim_u, '\ndim_m:', dim_m)
+    n_users = np.max(userID) + 1
+    n_movies = np.max(movieID) + 1
+    n_genders = 2
+    n_ages = np.max(userAge) + 1
 
     print('============================================================')
     print('Construct Model')
-    in_u = Input(shape=(1,))
-    in_m = Input(shape=(1,))
-    emb_u = Embedding(input_dim=dim_u+1, output_dim=256, input_length=1)(in_u)
-    emb_m = Embedding(input_dim=dim_m+1, output_dim=256, input_length=1)(in_m)
-    fl_u = Flatten()(emb_u)
-    fl_m = Flatten()(emb_m)
-    x = concatenate(inputs=[fl_u, fl_m])
+    # input
+    in_userID = Input(shape=(1,))
+    in_movieID = Input(shape=(1,))
+    # embedding
+    emb_userID = Embedding(n_users, 256)(in_userID)
+    emb_movieID = Embedding(n_movies, 256)(in_movieID)
+    vec_userID = Flatten()(emb_userID)
+    vec_movieID = Flatten()(emb_movieID)
+    # concatenate
+    x = concatenate(inputs=[vec_userID, vec_movieID])
+    # dense
     x = Dense(512, activation='elu')(x)
     x = Dense(256, activation='elu')(x)
     x = Dense(128, activation='elu')(x)
     x = Dense(64, activation='elu')(x)
+    # output
     out = Dense(1, activation='linear')(x)
-
-    model = Model(inputs=[in_u, in_m], outputs=out)
+    # model
+    model = Model(inputs=[in_userID, in_movieID], outputs=out)
     model.summary()
 
-    def rmse(y_true, y_pred):
-        mse = K.mean((y_pred - y_true) ** 2)
-        return K.sqrt(mse)
+    def rmse(y_true, y_pred): return K.sqrt( K.mean((y_pred - y_true)**2) )
 
-    model.compile(optimizer='rmsprop', loss='mse', metrics=[rmse])
+    model.compile(optimizer='adam', loss='mse', metrics=[rmse])
    
     print('============================================================')
     print('Train Model')
-    es = EarlyStopping(monitor='val_rmse', patience=5, verbose=1, mode='min')
+    es = EarlyStopping(monitor='val_rmse', patience=10, verbose=1, mode='min')
     cp = ModelCheckpoint(monitor='val_rmse', save_best_only=True, save_weights_only=False, \
-                         mode='min', filepath='mf_model.h5')
-    history = model.fit([X_user, X_movie], Y, epochs=50, verbose=1, \
-                        batch_size=10000, validation_split=0.1, callbacks=[es, cp])
+                         mode='min', filepath='dnn_model.h5')
+    history = model.fit([userID, movieID], Y, \
+                        epochs=200, verbose=1, batch_size=10000, callbacks=[es, cp], \
+                        validation_split=0.05)
     H = history.history
+
+    print('============================================================')
+    print('Test Model')
+    model = load_model('dnn_model.h5', custom_objects={'rmse': rmse})
+    test = read_test(DATA_DIR + '/test.csv')
+    ID = np.array(test[:, 0]).reshape(-1, 1)
+    print('Test data len:', len(test))
+    
+    userID, movieID, userGender, userAge, userOccu, movieGenre, _Y = \
+        preprocess(test, genders, ages, occupations, movies)
+
+    result = model.predict([userID, movieID, userGender, userAge, userOccu, movieGenre])
+
+    print('Output Result')
+    rating = np.clip(result, 1, 5).reshape(-1, 1)
+    output = np.array( np.concatenate((ID, rating), axis=1))
+    write_result('dnn_direct_test.csv', output)
+    print(output[:20])
    
     print('============================================================')
     print('Save Result')
-    np.savez('mf_history.npz', rmse=H['rmse'])
+    np.savez('dnn_history.npz', rmse=H['rmse'], val_rmse=H['val_rmse'])
 
 
 if __name__ == '__main__':
