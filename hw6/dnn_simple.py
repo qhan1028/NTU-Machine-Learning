@@ -71,8 +71,8 @@ def main():
     vec_userOccu = Dense(DIM, activation='linear')(in_userOccu)
     vec_movieGenre = Dense(DIM, activation='linear')(in_movieGenre)
     # concatenate
-    x = Concatenate()([vec_userID, vec_movieID, vec_userOccu, vec_movieGenre, \
-                       in_userGender, in_userAge])
+    x = Concatenate()([vec_userID, vec_movieID])#, vec_userOccu, vec_movieGenre, \
+                       #in_userGender, in_userAge])
     # dense
     x = Dense(128, activation='elu')(x)
     x = Dense(64, activation='elu')(x)
@@ -80,7 +80,7 @@ def main():
     # output
     out = Dense(1, activation='linear')(x)
     # model
-    model = Model(inputs=[in_userID, in_movieID, in_userGender, in_userAge, in_userOccu, in_movieGenre], outputs=out)
+    model = Model(inputs=[in_userID, in_movieID], outputs=out)
     model.summary()
 
     def rmse(y_true, y_pred): return K.sqrt( K.mean((y_pred - y_true)**2) )
@@ -91,15 +91,15 @@ def main():
     print('Train Model')
     es = EarlyStopping(monitor='val_rmse', patience=10, verbose=1, mode='min')
     cp = ModelCheckpoint(monitor='val_rmse', save_best_only=True, save_weights_only=False, \
-                         mode='min', filepath='dnn_model.h5')
-    history = model.fit([userID, movieID, userGender, userAge, userOccu, movieGenre], Y, \
+                         mode='min', filepath='dnn_simple_model.h5')
+    history = model.fit([userID, movieID], Y, \
                         epochs=200, verbose=1, batch_size=10000, callbacks=[es, cp], \
                         validation_split=0.05)
     H = history.history
 
     print('============================================================')
     print('Test Model')
-    model = load_model('dnn_model.h5', custom_objects={'rmse': rmse})
+    model = load_model('dnn_simple_model.h5', custom_objects={'rmse': rmse})
     test = read_test(DATA_DIR + '/test.csv')
     ID = np.array(test[:, 0]).reshape(-1, 1)
     print('Test data len:', len(test))
@@ -107,20 +107,20 @@ def main():
     userID, movieID, userGender, userAge, userOccu, movieGenre, _Y = \
         preprocess(test, genders, ages, occupations, movies)
 
-    result = model.predict([userID, movieID, userGender, userAge, userOccu, movieGenre])
+    result = model.predict([userID, movieID])
 
     print('Output Result')
     rating = np.clip(result, 1, 5).reshape(-1, 1)
     output = np.array( np.concatenate((ID, rating), axis=1))
-    write_result('dnn_direct_test.csv', output)
+    write_result('dnn_simple.csv', output)
     print(output[:20])
    
     print('============================================================')
     print('Save Result')
     best_val = str( round(np.min(H['val_rmse']), 6) )
     print('Best Val:', best_val)
-    np.savez('dnn_' + best_val + '_history.npz', rmse=H['rmse'], val_rmse=H['val_rmse'])
-    os.rename('dnn_model.h5', 'dnn_' + best_val + '.h5')
+    np.savez('dnn_simple_' + best_val + '_history.npz', rmse=H['rmse'], val_rmse=H['val_rmse'])
+    os.rename('dnn_simple_model.h5', 'dnn_simple_' + best_val + '.h5')
 
 if __name__ == '__main__':
     main()

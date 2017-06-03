@@ -129,6 +129,7 @@ def main():
     print('============================================================')
     print('Save Result')
     best_val = str( round(np.min(H['val_rmse']), 6) )
+    print('Best Val:', best_val)
     np.savez('mf_' + best_val + '_history.npz', rmse=H['rmse'], val_rmse=H['val_rmse'])
     os.rename('mf_model.h5', 'mf_' + best_val + '.h5')
 
