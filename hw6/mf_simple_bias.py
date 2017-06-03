@@ -120,7 +120,7 @@ def main():
     print('Output Result')
     rating = np.clip(result, 1, 5).reshape(-1, 1)
     output = np.array( np.concatenate((ID, rating), axis=1))
-    write_result('mf_simple_predict.csv', output)
+    write_result('mf_simple_bias.csv', output)
     print(output[:20])
    
     print('============================================================')
