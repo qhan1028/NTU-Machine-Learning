@@ -20,7 +20,6 @@ def read_movie(filename):
             result.append( all_genres.index(g) )
         return result, all_genres
 
-
     movies, all_genres = [[]] * 3953, []
     with open(filename, 'r', encoding='latin-1') as f:
         f.readline()

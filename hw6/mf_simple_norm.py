@@ -64,35 +64,13 @@ def main():
     # inputs
     in_userID = Input(shape=(1,))       # user id
     in_movieID = Input(shape=(1,))      # movie id
-    in_userGender = Input(shape=(1,))   # user gender
-    in_userAge = Input(shape=(1,))      # user age
-    in_userOccu = Input(shape=(21,))    # user occupation
-    in_movieGenre = Input(shape=(18,))  # movie genre
     # embeddings
     emb_userID = Embedding(n_users, EMB_DIM)(in_userID)
     emb_movieID = Embedding(n_movies, EMB_DIM)(in_movieID)
     vec_userID = Flatten()(emb_userID)
     vec_movieID = Flatten()(emb_movieID)
-    vec_userOccu = Dense(EMB_DIM, activation='linear')(in_userOccu)
-    vec_movieGenre = Dense(EMB_DIM, activation='linear')(in_movieGenre)
     # dot
     dot1 = Dot(axes=1)([vec_userID, vec_movieID])
-    dot2 = Dot(axes=1)([vec_userID, vec_userOccu])
-    dot3 = Dot(axes=1)([vec_userID, vec_movieGenre])
-    dot4 = Dot(axes=1)([vec_movieID, vec_userOccu])
-    dot5 = Dot(axes=1)([vec_movieID, vec_movieGenre])
-    dot6 = Dot(axes=1)([vec_userOccu, vec_movieGenre])
-    # concatenate
-    con_dot = Concatenate()([dot1, dot2, dot3, dot4, dot5, dot6, \
-                             in_userGender, in_userAge])
-    dense_out = Dense(1, activation='linear')(con_dot)
-    # bias
-    emb2_userID = Embedding(n_users, 1, embeddings_initializer='zeros')(in_userID)
-    emb2_movieID = Embedding(n_movies, 1, embeddings_initializer='zeros')(in_movieID)
-    bias_userID = Flatten()(emb2_userID)
-    bias_movieID = Flatten()(emb2_movieID)
-    # output 
-    out = Add()([bias_userID, bias_movieID, dot1])
     # model (userID * movieID only)
     model = Model(inputs=[in_userID, in_movieID], outputs=dot1)
     model.summary()
@@ -130,7 +108,6 @@ def main():
     print('Output Result')
     rating = np.clip(result, 1, 5).reshape(-1, 1)
     output = np.array( np.concatenate((ID, rating), axis=1))
-    print(output[:20])
    
     print('============================================================')
     print('Save Result')

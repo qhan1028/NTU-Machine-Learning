@@ -57,23 +57,23 @@ def main():
     EMB_DIM = 512
     print('Embedding Dimension:', EMB_DIM)
     # inputs
-    in_userID = Input(shape=(1,))       # user id
-    in_movieID = Input(shape=(1,))      # movie id
+    in_userID = Input(shape=(1,), name='in_userID')       # user id
+    in_movieID = Input(shape=(1,), name='in_movieID')      # movie id
     # embeddings
-    emb_userID = Embedding(n_users, EMB_DIM)(in_userID)
-    emb_movieID = Embedding(n_movies, EMB_DIM)(in_movieID)
-    vec_userID = Dropout(0.5)(Flatten()(emb_userID))
-    vec_movieID = Dropout(0.5)(Flatten()(emb_movieID))
+    emb_userID = Embedding(n_users, EMB_DIM, name='emb_userID')(in_userID)
+    emb_movieID = Embedding(n_movies, EMB_DIM, name='emb_movieID')(in_movieID)
+    vec_userID = Flatten(name='vec_userID')(emb_userID)
+    vec_movieID = Flatten(name='vec_movieID')(emb_movieID)
     # dot
     dot1 = Dot(axes=1)([vec_userID, vec_movieID])
     # bias
-    emb2_userID = Embedding(n_users, 1, embeddings_initializer='zeros')(in_userID)
-    emb2_movieID = Embedding(n_movies, 1, embeddings_initializer='zeros')(in_movieID)
-    bias_userID = Flatten()(emb2_userID)
-    bias_movieID = Flatten()(emb2_movieID)
+    emb2_userID = Embedding(n_users, 1, name='emb2_userID')(in_userID)
+    emb2_movieID = Embedding(n_movies, 1, name='emb2_movieID')(in_movieID)
+    bias_userID = Flatten(name='bias_userID')(emb2_userID)
+    bias_movieID = Flatten(name='bias_movieID')(emb2_movieID)
     # output 
     out = Add()([bias_userID, bias_movieID, dot1])
-    # model (userID * movieID only)
+    # model
     model = Model(inputs=[in_userID, in_movieID], outputs=out)
     model.summary()
 
@@ -82,7 +82,7 @@ def main():
    
     print('============================================================')
     print('Train Model')
-    es = EarlyStopping(monitor='val_rmse', patience=50, verbose=1, mode='min')
+    es = EarlyStopping(monitor='val_rmse', patience=10, verbose=1, mode='min')
     cp = ModelCheckpoint(monitor='val_rmse', save_best_only=True, save_weights_only=False, \
                          mode='min', filepath='mf_simple_model.h5')
     history = model.fit([userID, movieID], Y, \

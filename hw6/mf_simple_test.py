@@ -58,7 +58,6 @@ def main():
     rating = np.clip(result, 1, 5)
     output = np.array( np.concatenate((ID, rating), axis=1))
     write_result(OUTPUT_FILE, output)
-    print(output[:20])
 
 
 if __name__ == '__main__':
