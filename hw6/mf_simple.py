@@ -89,6 +89,8 @@ def main():
                         epochs=1000, verbose=1, batch_size=10000, callbacks=[es, cp], \
                         validation_split=0.05)
     H = history.history
+    best_val = str( round(np.min(H['val_rmse']), 6) )
+    print('Best Val RMSE:', best_val)
 
     print('============================================================')
     print('Test Model')
@@ -105,13 +107,10 @@ def main():
     print('Output Result')
     rating = np.clip(result, 1, 5).reshape(-1, 1)
     output = np.array( np.concatenate((ID, rating), axis=1))
-    write_result('mf_simple.csv', output)
-    print(output[:20])
    
     print('============================================================')
     print('Save Result')
-    best_val = str( round(np.min(H['val_rmse']), 6) )
-    print('Best Val RMSE:', best_val)
+    write_result('mf_simple_' + best_val + '.csv', output)
     np.savez('mf_simple_' + best_val + '_his.npz', rmse=H['rmse'], val_rmse=H['val_rmse'])
     os.rename('mf_simple_model.h5', 'mf_simple_' + best_val + '.h5')
 
