@@ -7,7 +7,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 import csv
 import numpy as np
 import keras.backend as K
-from keras.layers import Input, Embedding, Flatten, Dense
+from keras.layers import Input, Embedding, Flatten, Dense, Dropout
 from keras.layers.merge import Dot, Add, Concatenate
 from keras.models import Model, load_model
 from keras.callbacks import EarlyStopping, ModelCheckpoint
@@ -59,28 +59,13 @@ def main():
     # inputs
     in_userID = Input(shape=(1,))       # user id
     in_movieID = Input(shape=(1,))      # movie id
-    in_userGender = Input(shape=(1,))   # user gender
-    in_userAge = Input(shape=(1,))      # user age
-    in_userOccu = Input(shape=(21,))    # user occupation
-    in_movieGenre = Input(shape=(18,))  # movie genre
     # embeddings
     emb_userID = Embedding(n_users, EMB_DIM)(in_userID)
     emb_movieID = Embedding(n_movies, EMB_DIM)(in_movieID)
-    vec_userID = Flatten()(emb_userID)
-    vec_movieID = Flatten()(emb_movieID)
-    vec_userOccu = Dense(EMB_DIM, activation='linear')(in_userOccu)
-    vec_movieGenre = Dense(EMB_DIM, activation='linear')(in_movieGenre)
+    vec_userID = Dropout(0.5)(Flatten()(emb_userID))
+    vec_movieID = Dropout(0.5)(Flatten()(emb_movieID))
     # dot
     dot1 = Dot(axes=1)([vec_userID, vec_movieID])
-    dot2 = Dot(axes=1)([vec_userID, vec_userOccu])
-    dot3 = Dot(axes=1)([vec_userID, vec_movieGenre])
-    dot4 = Dot(axes=1)([vec_movieID, vec_userOccu])
-    dot5 = Dot(axes=1)([vec_movieID, vec_movieGenre])
-    dot6 = Dot(axes=1)([vec_userOccu, vec_movieGenre])
-    # concatenate
-    con_dot = Concatenate()([dot1, dot2, dot3, dot4, dot5, dot6, \
-                             in_userGender, in_userAge])
-    dense_out = Dense(1, activation='linear')(con_dot)
     # bias
     emb2_userID = Embedding(n_users, 1, embeddings_initializer='zeros')(in_userID)
     emb2_movieID = Embedding(n_movies, 1, embeddings_initializer='zeros')(in_movieID)
@@ -89,7 +74,7 @@ def main():
     # output 
     out = Add()([bias_userID, bias_movieID, dot1])
     # model (userID * movieID only)
-    model = Model(inputs=[in_userID, in_movieID], outputs=dot1)
+    model = Model(inputs=[in_userID, in_movieID], outputs=out)
     model.summary()
 
     def rmse(y_true, y_pred): return K.sqrt( K.mean((y_pred - y_true)**2) )
@@ -97,11 +82,11 @@ def main():
    
     print('============================================================')
     print('Train Model')
-    es = EarlyStopping(monitor='val_rmse', patience=10, verbose=1, mode='min')
+    es = EarlyStopping(monitor='val_rmse', patience=50, verbose=1, mode='min')
     cp = ModelCheckpoint(monitor='val_rmse', save_best_only=True, save_weights_only=False, \
                          mode='min', filepath='mf_simple_model.h5')
     history = model.fit([userID, movieID], Y, \
-                        epochs=500, verbose=1, batch_size=10000, callbacks=[es, cp], \
+                        epochs=1000, verbose=1, batch_size=10000, callbacks=[es, cp], \
                         validation_split=0.05)
     H = history.history
 
