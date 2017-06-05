@@ -75,8 +75,7 @@ def main():
     model = Model(inputs=[in_userID, in_movieID], outputs=dot1)
     model.summary()
 
-    def rmse(y_true, y_pred):
-        return K.sqrt( K.mean(((y_pred - y_true) * Y_std)**2) )
+    def rmse(y_true, y_pred): return K.sqrt( K.mean(((y_pred - y_true) * Y_std)**2) )
     model.compile(optimizer='adam', loss='mse', metrics=[rmse])
    
     print('============================================================')

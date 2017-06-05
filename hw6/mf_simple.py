@@ -54,7 +54,7 @@ def main():
 
     print('============================================================')
     print('Construct Model')
-    EMB_DIM = 512
+    EMB_DIM = 256
     print('Embedding Dimension:', EMB_DIM)
     # inputs
     in_userID = Input(shape=(1,), name='in_userID')       # user id
@@ -62,8 +62,8 @@ def main():
     # embeddings
     emb_userID = Embedding(n_users, EMB_DIM, name='emb_userID')(in_userID)
     emb_movieID = Embedding(n_movies, EMB_DIM, name='emb_movieID')(in_movieID)
-    vec_userID = Flatten(name='vec_userID')(emb_userID)
-    vec_movieID = Flatten(name='vec_movieID')(emb_movieID)
+    vec_userID = Dropout(0.5)( Flatten(name='vec_userID')(emb_userID) )
+    vec_movieID = Dropout(0.5)( Flatten(name='vec_movieID')(emb_movieID) )
     # dot
     dot1 = Dot(axes=1)([vec_userID, vec_movieID])
     # bias
@@ -82,7 +82,7 @@ def main():
    
     print('============================================================')
     print('Train Model')
-    es = EarlyStopping(monitor='val_rmse', patience=10, verbose=1, mode='min')
+    es = EarlyStopping(monitor='val_rmse', patience=30, verbose=1, mode='min')
     cp = ModelCheckpoint(monitor='val_rmse', save_best_only=True, save_weights_only=False, \
                          mode='min', filepath='mf_simple_model.h5')
     history = model.fit([userID, movieID], Y, \

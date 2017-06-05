@@ -7,7 +7,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 import csv
 import numpy as np
 import keras.backend as K
-from keras.layers import Input, Embedding, Flatten, Dense
+from keras.layers import Input, Embedding, Flatten, Dense, Dropout
 from keras.layers.merge import Dot, Add, Concatenate
 from keras.models import Model, load_model
 from keras.callbacks import EarlyStopping, ModelCheckpoint
@@ -56,7 +56,7 @@ def main():
 
     print('============================================================')
     print('Construct Model')
-    EMB_DIM = 512
+    EMB_DIM = 128
     print('Embedding Dimension:', EMB_DIM)
     # inputs
     in_userID = Input(shape=(1,))       # user id
@@ -68,10 +68,10 @@ def main():
     # embeddings
     emb_userID = Embedding(n_users, EMB_DIM)(in_userID)
     emb_movieID = Embedding(n_movies, EMB_DIM)(in_movieID)
-    vec_userID = Flatten()(emb_userID)
-    vec_movieID = Flatten()(emb_movieID)
-    vec_userOccu = Dense(EMB_DIM, activation='linear')(in_userOccu)
-    vec_movieGenre = Dense(EMB_DIM, activation='linear')(in_movieGenre)
+    vec_userID = Dropout(0.5)( Flatten()(emb_userID) )
+    vec_movieID = Dropout(0.5)( Flatten()(emb_movieID) )
+    vec_userOccu = Dropout(0.5)( Dense(EMB_DIM, activation='linear')(in_userOccu) )
+    vec_movieGenre = Dropout(0.5)( Dense(EMB_DIM, activation='linear')(in_movieGenre) )
     # dot
     dot1 = Dot(axes=1)([vec_userID, vec_movieID])
     dot2 = Dot(axes=1)([vec_userID, vec_userOccu])
@@ -100,11 +100,11 @@ def main():
    
     print('============================================================')
     print('Train Model')
-    es = EarlyStopping(monitor='val_rmse', patience=10, verbose=1, mode='min')
+    es = EarlyStopping(monitor='val_rmse', patience=30, verbose=1, mode='min')
     cp = ModelCheckpoint(monitor='val_rmse', save_best_only=True, save_weights_only=False, \
                          mode='min', filepath='mf_model.h5')
     history = model.fit([userID, movieID, userGender, userAge, userOccu, movieGenre], Y, \
-                        epochs=200, verbose=1, batch_size=10000, callbacks=[es, cp], \
+                        epochs=1000, verbose=1, batch_size=10000, callbacks=[es, cp], \
                         validation_split=0.05)
     H = history.history
     best_val = str( round(np.min(H['val_rmse']), 6) )
