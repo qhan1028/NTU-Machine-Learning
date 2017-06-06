@@ -32,6 +32,7 @@ def read_movie(filename):
     for i, m in enumerate(movies):
         movies[i] = to_categorical(m, categories)
 
+    print('movies:', np.array(movies).shape)
     return movies, all_genres
 
 
@@ -47,6 +48,9 @@ def read_user(filename):
             ages[int(userID)] = int(age)
             occupations[int(userID)] = to_categorical(int(occu), categories)
     
+    print('genders:', np.array(genders).shape)
+    print('ages:', np.array(ages).shape)
+    print('occupations:', np.array(occupations).shape)
     return genders, ages, occupations
 
 
@@ -58,6 +62,8 @@ def read_train(filename):
         for row in reader:
             dataID, userID, movieID, rating = row
             data.append( [int(dataID), int(userID), int(movieID), int(rating)] )
+
+    print('Train data len:', len(data))
     return np.array(data)
 
 
@@ -99,4 +105,31 @@ def preprocess(data, genders, ages, occupations, movies):
         print('Get Ratings')
         Rating = data[:, 3].reshape(-1, 1)
 
+    print('userID:', userID.shape)
+    print('movieID:', movieID.shape)
+    print('userGender:', userGender.shape)
+    print('userAge:', userAge.shape)
+    print('userOccu:', userOccu.shape)
+    print('movieGenre:', movieGenre.shape)
+    print('Y:', Rating.shape)
     return userID, movieID, userGender, userAge, userOccu, movieGenre, Rating
+
+def find_avg_Y(data):
+    
+    ratingSum = [0] * 6041
+    ratingCount = [0] * 6041
+    userID = data[:, 1]
+    ratings = data[:, 3]
+    for i, (uid, r) in enumerate(zip(userID, ratings)):
+        print('\ri:', i, end='', flush=True)
+        ratingSum[uid] += r
+        ratingCount[uid] += 1
+
+    ratingMean = [0] * 6041
+    for i, (s, c) in enumerate(zip(ratingSum, ratingCount)):
+        if c != 0:
+            ratingMean[i] = s / c
+
+    userAvgY = np.array(ratingMean)[userID]
+    print('\ruserAvgY:', userAvgY.shape)
+    return ratingMean

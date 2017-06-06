@@ -29,30 +29,15 @@ def main():
     print('Read Data')
     movies, all_genres = read_movie(DATA_DIR + '/movies.csv')
     genders, ages, occupations = read_user(DATA_DIR + '/users.csv')
-    print('movies:', np.array(movies).shape)
-    print('genders:', np.array(genders).shape)
-    print('ages:', np.array(ages).shape)
-    print('occupations:', np.array(occupations).shape)
-
     train = read_train(DATA_DIR + '/train.csv')
-    print('Train data len:', len(train))
 
     print('============================================================')
     print('Preprocess Data')
     userID, movieID, userGender, userAge, userOccu, movieGenre, Y = \
         preprocess(train, genders, ages, occupations, movies)
-    print('userID:', userID.shape)
-    print('movieID:', movieID.shape)
-    print('userGender:', userGender.shape)
-    print('userAge:', userAge.shape)
-    print('userOccu:', userOccu.shape)
-    print('movieGenre:', movieGenre.shape)
-    print('Y:', Y.shape)
 
     n_users = np.max(userID) + 1
     n_movies = np.max(movieID) + 1
-    n_genders = 2
-    n_ages = np.max(userAge) + 1
 
     print('============================================================')
     print('Construct Model')
