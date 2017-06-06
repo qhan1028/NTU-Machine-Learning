@@ -75,6 +75,8 @@ def read_test(filename):
         for row in reader:
             dataID, userID, movieID = row
             data.append( [dataID, int(userID), int(movieID)] )
+
+    print('Test data len:', len(data))
     return np.array(data)
 
 
