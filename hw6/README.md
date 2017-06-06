@@ -1,4 +1,4 @@
-* Simple MF:
-  `./hw6.sh ++data directory++ ++prediction file++`
-* Ensembled MF
-  `./hw6_best.sh ++data directory++ ++prediction file++`
+* Simple MF<br>
+    `./hw6.sh`++`data directory`++ ++`prediction file`++
+* Ensembled MF<br>
+    `./hw6_best.sh`++`data directory`++++`prediction file`++
