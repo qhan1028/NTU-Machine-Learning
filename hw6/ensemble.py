@@ -24,6 +24,7 @@ def read_list(filename):
             weights.append(float(row[0]))
             names.append(row[1])
 
+    print('models:', len(weights))
     return weights, names
 
 def write_result(filename, output):
