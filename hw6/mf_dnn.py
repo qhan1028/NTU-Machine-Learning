@@ -7,7 +7,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 import csv
 import numpy as np
 import keras.backend as K
-from keras.layers import Input, Embedding, Flatten, Dense
+from keras.layers import Input, Embedding, Flatten, Dense, Dropout
 from keras.layers.merge import Dot, Add, Concatenate
 from keras.models import Model, load_model
 from keras.callbacks import EarlyStopping, ModelCheckpoint
@@ -56,7 +56,7 @@ def main():
 
     print('============================================================')
     print('Construct Model')
-    EMB_DIM = 512
+    EMB_DIM = 64
     print('Embedding Dimension:', EMB_DIM)
     # inputs
     in_userID = Input(shape=(1,))       # user id
@@ -68,10 +68,10 @@ def main():
     # embeddings
     emb_userID = Embedding(n_users, EMB_DIM)(in_userID)
     emb_movieID = Embedding(n_movies, EMB_DIM)(in_movieID)
-    vec_userID = Flatten()(emb_userID)
-    vec_movieID = Flatten()(emb_movieID)
-    vec_userOccu = Dense(EMB_DIM, activation='linear')(in_userOccu)
-    vec_movieGenre = Dense(EMB_DIM, activation='linear')(in_movieGenre)
+    vec_userID = Dropout(0.5)( Flatten()(emb_userID) )
+    vec_movieID = Dropout(0.5)( Flatten()(emb_movieID) )
+    vec_userOccu = Dropout(0.5)( Dense(EMB_DIM, activation='linear')(in_userOccu) )
+    vec_movieGenre = Dropout(0.5)( Dense(EMB_DIM, activation='linear')(in_movieGenre) )
     # dot
     dot1 = Dot(axes=1)([vec_userID, vec_movieID])
     dot2 = Dot(axes=1)([vec_userID, vec_userOccu])
@@ -87,9 +87,7 @@ def main():
     # concatenate
     con_dot = Concatenate()([dot1, dot2, dot3, dot4, dot5, dot6, \
                              in_userGender, in_userAge, bias_userID, bias_movieID])
-    x = Dense(128, activation='relu')(con_dot)
-    x = Dense(128, activation='relu')(x)
-    x = Dense(64, activation='relu')(x)
+    x = Dense(64, activation='elu')(con_dot)
     out = Dense(1, activation='linear')(x)
     # model
     model = Model(inputs=[in_userID, in_movieID, in_userGender, in_userAge, \

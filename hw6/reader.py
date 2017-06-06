@@ -91,9 +91,8 @@ def preprocess(data, genders, ages, occupations, movies):
     movieGenre = np.array(movies)[movieID]
 
     print('Normalize Ages')
-    mean = np.mean(userAge)
     std = np.std(userAge)
-    userAge = (userAge - mean) / std
+    userAge = userAge / std
 
     Rating = []
     if data.shape[1] == 4:
