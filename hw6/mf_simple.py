@@ -35,20 +35,20 @@ def main():
     print('Preprocess Data')
     userID, movieID, userGender, userAge, userOccu, movieGenre, Y = \
         preprocess(train, genders, ages, occupations, movies)
-    ratingMean = find_avg_Y(train)
-    userAvgY = np.array(ratingMean)[userID]
+    #ratingMean = find_avg_Y(train)
+    #userAvgY = np.array(ratingMean)[userID]
 
     n_users = np.max(userID) + 1
     n_movies = np.max(movieID) + 1
 
     print('============================================================')
     print('Construct Model')
-    EMB_DIM = 256
+    EMB_DIM = 128
     print('Embedding Dimension:', EMB_DIM)
     # inputs
     in_userID = Input(shape=(1,), name='in_userID')       # user id
     in_movieID = Input(shape=(1,), name='in_movieID')      # movie id
-    in_userAvgY = Input(shape=(1,), name='in_userAvgY')
+    #in_userAvgY = Input(shape=(1,), name='in_userAvgY')
     # embeddings
     emb_userID = Embedding(n_users, EMB_DIM, name='emb_userID')(in_userID)
     emb_movieID = Embedding(n_movies, EMB_DIM, name='emb_movieID')(in_movieID)
@@ -62,9 +62,9 @@ def main():
     bias_userID = Flatten(name='bias_userID')(emb2_userID)
     bias_movieID = Flatten(name='bias_movieID')(emb2_movieID)
     # output 
-    out = Add()([in_userAvgY, bias_userID, bias_movieID, dot1])
+    out = Add()([bias_userID, bias_movieID, dot1])
     # model
-    model = Model(inputs=[in_userID, in_movieID, in_userAvgY], outputs=out)
+    model = Model(inputs=[in_userID, in_movieID], outputs=out)
     model.summary()
 
     def rmse(y_true, y_pred): return K.sqrt( K.mean((y_pred - y_true)**2) )
@@ -75,14 +75,13 @@ def main():
     es = EarlyStopping(monitor='val_rmse', patience=30, verbose=1, mode='min')
     cp = ModelCheckpoint(monitor='val_rmse', save_best_only=True, save_weights_only=False, \
                          mode='min', filepath='mf_simple_model.h5')
-    history = model.fit([userID, movieID, userAvgY], Y, \
+    history = model.fit([userID, movieID], Y, \
                         epochs=1000, verbose=1, batch_size=10000, callbacks=[es, cp], \
                         validation_split=0.05)
     H = history.history
     best_val = str( round(np.min(H['val_rmse']), 6) )
     print('Best Val RMSE:', best_val)
     
-    return
     print('============================================================')
     print('Test Model')
     model = load_model('mf_simple_model.h5', custom_objects={'rmse': rmse})
@@ -92,9 +91,9 @@ def main():
     
     userID, movieID, userGender, userAge, userOccu, movieGenre, _Y = \
         preprocess(test, genders, ages, occupations, movies)
-    userAvgY = np.array(ratingMean)[userID]
+    #userAvgY = np.array(ratingMean)[userID]
 
-    result = model.predict([userID, movieID, userAvgY])
+    result = model.predict([userID, movieID])
 
     print('Output Result')
     rating = np.clip(result, 1, 5).reshape(-1, 1)

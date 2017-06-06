@@ -111,7 +111,7 @@ def preprocess(data, genders, ages, occupations, movies):
     print('userAge:', userAge.shape)
     print('userOccu:', userOccu.shape)
     print('movieGenre:', movieGenre.shape)
-    print('Y:', Rating.shape)
+    print('Y:', np.array(Rating).shape)
     return userID, movieID, userGender, userAge, userOccu, movieGenre, Rating
 
 def find_avg_Y(data):
