@@ -27,10 +27,6 @@ def main():
     print('Read Data')
     movies, all_genres = read_movie(DATA_DIR + '/movies.csv')
     genders, ages, occupations = read_user(DATA_DIR + '/users.csv')
-    print('movies:', np.array(movies).shape)
-    print('genders:', np.array(genders).shape)
-    print('ages:', np.array(ages).shape)
-    print('occupations:', np.array(occupations).shape)
 
     test = read_test(DATA_DIR + '/test.csv')
     ID = np.array(test[:, 0]).reshape(-1, 1)

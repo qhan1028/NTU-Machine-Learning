@@ -14,6 +14,9 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint
 from reader import *
 
 DATA_DIR = './data'
+MODEL_DIR = './model'
+PRED_DIR = './predict'
+HIS_DIR = './history'
 
 
 def write_result(filename, output):
@@ -97,9 +100,9 @@ def main():
    
     print('============================================================')
     print('Save Result')
-    write_result('mf_simple_norm.csv', output)
-    np.savez('mf_simple_' + best_val + '_his.npz', rmse=H['rmse'], val_rmse=H['val_rmse'])
-    os.rename('mf_simple_model.h5', 'mf_simple_' + best_val + '.h5')
+    write_result(PRED_DIR + '/mf_simple_norm.csv', output)
+    np.savez(HIS_DIR + '/mf_simple_' + best_val + '_his.npz', rmse=H['rmse'], val_rmse=H['val_rmse'])
+    os.rename('mf_simple_model.h5', MODEL_DIR + '/mf_simple_' + best_val + '.h5')
 
 
 if __name__ == '__main__':
