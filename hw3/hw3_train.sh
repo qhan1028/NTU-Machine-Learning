@@ -1,1 +1,1 @@
-python3 train.py $1
+python3 cnn_train.py $1
