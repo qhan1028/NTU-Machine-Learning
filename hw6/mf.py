@@ -41,7 +41,7 @@ def main():
 
     print('============================================================')
     print('Construct Model')
-    EMB_DIM = 256
+    EMB_DIM = 64
     print('Embedding Dimension:', EMB_DIM)
     # inputs
     in_userID = Input(shape=(1,))       # user id
