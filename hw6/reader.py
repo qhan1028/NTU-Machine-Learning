@@ -84,7 +84,7 @@ def preprocess(data, genders, ages, occupations, movies):
 
     if data.shape[1] == 4:
         print('Shuffle Data')
-        np.random.seed(3318)
+        np.random.seed(1019)
         index = np.random.permutation(len(data))
         data = data[index]
 
