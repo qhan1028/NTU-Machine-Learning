@@ -98,14 +98,13 @@ def main():
     size = X_train_sj.shape[0]
 
     model_sj = Sequential()
-    model_sj.add(Dense(256, input_shape=(dim,), activation='relu'))
-    model_sj.add(Dropout(0.2))
+    model_sj.add(Dense(128, input_shape=(dim,), activation='linear'))
     model_sj.add(Dense(256, activation='sigmoid'))
     model_sj.add(Dense(512, activation='elu'))
     model_sj.add(Dense(512, activation='elu'))
-    model_sj.add(Dense(256, activation='elu'))
-    model_sj.add(Dense(128, activation='elu'))
-    model_sj.add(Dense(64, activation='elu'))
+    model_sj.add(Dense(256, activation='relu'))
+    model_sj.add(Dense(128, activation='relu'))
+    model_sj.add(Dense(64, activation='relu'))
     model_sj.add(Dense(1, activation='linear'))
 
     print('Compile model')
@@ -126,12 +125,10 @@ def main():
     size = X_train_iq.shape[0]
 
     model_iq = Sequential()
-    model_iq.add(Dense(256, input_shape=(dim,), activation='relu'))
-    model_iq.add(Dropout(0.2))
-    model_iq.add(Dense(512, activation='sigmoid'))
-    model_iq.add(Dense(512, activation='elu'))
+    model_iq.add(Dense(128, input_shape=(dim,), activation='linear'))
+    model_iq.add(Dense(256, activation='sigmoid'))
     model_iq.add(Dense(256, activation='elu'))
-    model_iq.add(Dense(128, activation='elu'))
+    model_iq.add(Dense(128, activation='relu'))
     model_iq.add(Dense(1, activation='linear'))
 
     print('Compile model')
@@ -159,11 +156,11 @@ def main():
     print('sj: ' + last_val_sj + '\niq: ' + last_val_iq)
 
     print('Save last model')
-    model_sj.save(MODEL_DIR + '/last_sj_' + last_val_sj + '.h5')
-    model_iq.save(MODEL_DIR + '/last_iq_' + last_val_iq + '.h5')
+    model_sj.save(MODEL_DIR + '/sj_' + last_val_sj + '_last.h5')
+    model_iq.save(MODEL_DIR + '/iq_' + last_val_iq + '_last.h5')
 
     print('Save last prediction')
-    output_result(PRED_DIR + '/last_sj_' + last_val_sj + '_iq_' + last_val_iq + '.csv', index, result_last)
+    output_result(PRED_DIR + '/sj_' + last_val_sj + '_iq_' + last_val_iq + '_last.csv', index, result_last)
 
     print('\n=================================================================')
     print('Predict best')
@@ -189,12 +186,13 @@ def main():
     print('\n=================================================================')
     print('Plot history')
     plt.figure(figsize=(10, 5))
-    plt.subplots_adjust(hspace=0.2)
+    plt.subplots_adjust(hspace=0.4)
 
     plt.subplot(2, 1, 1)
     plt.plot(his_sj['mean_absolute_error'], 'b')
     plt.plot(his_sj['val_mean_absolute_error'], 'r')
     plt.grid(linestyle=':')
+    plt.xlabel('epochs')
     plt.ylabel('mean absolute error')
     plt.title('sj')
 
@@ -211,8 +209,4 @@ def main():
 
 
 if __name__ == '__main__':
-    if not os.path.exists(DATA_DIR): os.mkdir(DATA_DIR)
-    if not os.path.exists(MODEL_DIR): os.mkdir(MODEL_DIR)
-    if not os.path.exists(PRED_DIR): os.mkdir(PRED_DIR)
-    if not os.path.exists(HIS_DIR): os.mkdir(HIS_DIR)
     main()
