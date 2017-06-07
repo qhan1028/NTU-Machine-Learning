@@ -12,7 +12,7 @@ from keras import backend as K
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Dropout
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from reader import *
+from Reader import *
 
 
 def interpolation(data):
@@ -129,6 +129,7 @@ def main():
     model_iq.add(Dense(256, activation='sigmoid'))
     model_iq.add(Dense(256, activation='elu'))
     model_iq.add(Dense(128, activation='relu'))
+    model_iq.add(Dense(64, activation='relu'))
     model_iq.add(Dense(1, activation='linear'))
 
     print('Compile model')
