@@ -58,16 +58,16 @@ def main():
     vec_userID = Dropout(0.5)( Flatten(name='vec_userID')(emb_userID) )
     vec_movieID = Dropout(0.5)( Flatten(name='vec_movieID')(emb_movieID) )
     # dot
-    dot1 = Dot(axes=1)([vec_userID, vec_movieID])
+    dot = Dot(axes=1)([vec_userID, vec_movieID])
     # bias
     emb2_userID = Embedding(n_users, 1, name='emb2_userID')(in_userID)
     emb2_movieID = Embedding(n_movies, 1, name='emb2_movieID')(in_movieID)
     bias_userID = Flatten(name='bias_userID')(emb2_userID)
     bias_movieID = Flatten(name='bias_movieID')(emb2_movieID)
     # output 
-    out = Add()([bias_userID, bias_movieID, dot1])
+    out = Add()([bias_userID, bias_movieID, dot])
     # model
-    model = Model(inputs=[in_userID, in_movieID], outputs=out)
+    model = Model(inputs=[in_userID, in_movieID], outputs=dot)
     model.summary()
 
     def rmse(y_true, y_pred): return K.sqrt( K.mean((y_pred - y_true)**2) )

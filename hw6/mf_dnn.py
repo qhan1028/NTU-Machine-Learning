@@ -59,7 +59,7 @@ def main():
 
     print('============================================================')
     print('Construct Model')
-    EMB_DIM = 64
+    EMB_DIM = 128
     print('Embedding Dimension:', EMB_DIM)
     # inputs
     in_userID = Input(shape=(1,))       # user id
@@ -102,7 +102,7 @@ def main():
    
     print('============================================================')
     print('Train Model')
-    es = EarlyStopping(monitor='val_rmse', patience=10, verbose=1, mode='min')
+    es = EarlyStopping(monitor='val_rmse', patience=30, verbose=1, mode='min')
     cp = ModelCheckpoint(monitor='val_rmse', save_best_only=True, save_weights_only=False, \
                          mode='min', filepath='mf_model.h5')
     history = model.fit([userID, movieID, userGender, userAge, userOccu, movieGenre], Y, \

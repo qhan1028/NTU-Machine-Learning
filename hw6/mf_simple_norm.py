@@ -7,7 +7,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 import csv
 import numpy as np
 import keras.backend as K
-from keras.layers import Input, Embedding, Flatten, Dense
+from keras.layers import Input, Embedding, Flatten, Dense, Dropout
 from keras.layers.merge import Dot, Add, Concatenate
 from keras.models import Model, load_model
 from keras.callbacks import EarlyStopping, ModelCheckpoint
@@ -49,7 +49,7 @@ def main():
 
     print('============================================================')
     print('Construct Model')
-    EMB_DIM = 512
+    EMB_DIM = 128
     print('Embedding Dimension:', EMB_DIM)
     # inputs
     in_userID = Input(shape=(1,))       # user id
@@ -57,12 +57,12 @@ def main():
     # embeddings
     emb_userID = Embedding(n_users, EMB_DIM)(in_userID)
     emb_movieID = Embedding(n_movies, EMB_DIM)(in_movieID)
-    vec_userID = Flatten()(emb_userID)
-    vec_movieID = Flatten()(emb_movieID)
+    vec_userID = Dropout(0.5)( Flatten()(emb_userID) )
+    vec_movieID = Dropout(0.5)( Flatten()(emb_movieID) )
     # dot
-    dot1 = Dot(axes=1)([vec_userID, vec_movieID])
+    dot = Dot(axes=1)([vec_userID, vec_movieID])
     # model (userID * movieID only)
-    model = Model(inputs=[in_userID, in_movieID], outputs=dot1)
+    model = Model(inputs=[in_userID, in_movieID], outputs=dot)
     model.summary()
 
     def rmse(y_true, y_pred): return K.sqrt( K.mean(((y_pred - y_true) * Y_std)**2) )
@@ -70,7 +70,7 @@ def main():
    
     print('============================================================')
     print('Train Model')
-    es = EarlyStopping(monitor='val_rmse', patience=10, verbose=1, mode='min')
+    es = EarlyStopping(monitor='val_rmse', patience=30, verbose=1, mode='min')
     cp = ModelCheckpoint(monitor='val_rmse', save_best_only=True, save_weights_only=False, \
                          mode='min', filepath='mf_simple_model.h5')
     history = model.fit([userID, movieID], Y, \
@@ -100,7 +100,7 @@ def main():
    
     print('============================================================')
     print('Save Result')
-    write_result(PRED_DIR + '/mf_simple_norm.csv', output)
+    write_result(PRED_DIR + '/mf_simple_' + best_val + '.csv', output)
     np.savez(HIS_DIR + '/mf_simple_' + best_val + '_his.npz', rmse=H['rmse'], val_rmse=H['val_rmse'])
     os.rename('mf_simple_model.h5', MODEL_DIR + '/mf_simple_' + best_val + '.h5')
 

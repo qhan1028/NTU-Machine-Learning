@@ -7,14 +7,16 @@ os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 import csv
 import numpy as np
 import keras.backend as K
-from keras.layers import Input, Embedding, Flatten, Dense
+from keras.layers import Input, Embedding, Flatten, Dense, Dropout
 from keras.layers.merge import Concatenate
 from keras.models import Model, load_model
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from reader import *
 
 DATA_DIR = './data'
-
+MODEL_DIR = './model'
+PRED_DIR = './predict'
+HIS_DIR = './history'
 
 def write_result(filename, output):
     with open(filename, 'w') as f:
@@ -41,7 +43,7 @@ def main():
 
     print('============================================================')
     print('Construct Model')
-    DIM = 512
+    DIM = 128
     print('Embedding Dimension:', DIM)
     # input
     in_userID = Input(shape=(1,))
@@ -53,10 +55,10 @@ def main():
     # embedding
     emb_userID = Embedding(n_users, DIM)(in_userID)
     emb_movieID = Embedding(n_movies, DIM)(in_movieID)
-    vec_userID = Flatten()(emb_userID)
-    vec_movieID = Flatten()(emb_movieID)
-    vec_userOccu = Dense(DIM, activation='linear')(in_userOccu)
-    vec_movieGenre = Dense(DIM, activation='linear')(in_movieGenre)
+    vec_userID = Dropout(0.5)( Flatten()(emb_userID))
+    vec_movieID = Dropout(0.5)( Flatten()(emb_movieID) )
+    vec_userOccu = Dropout(0.5)( Dense(DIM, activation='linear')(in_userOccu) )
+    vec_movieGenre = Dropout(0.5)( Dense(DIM, activation='linear')(in_movieGenre) )
     # concatenate
     x = Concatenate()([vec_userID, vec_movieID])#, vec_userOccu, vec_movieGenre, \
                        #in_userGender, in_userAge])
@@ -76,7 +78,7 @@ def main():
    
     print('============================================================')
     print('Train Model')
-    es = EarlyStopping(monitor='val_rmse', patience=10, verbose=1, mode='min')
+    es = EarlyStopping(monitor='val_rmse', patience=30, verbose=1, mode='min')
     cp = ModelCheckpoint(monitor='val_rmse', save_best_only=True, save_weights_only=False, \
                          mode='min', filepath='dnn_simple_model.h5')
     history = model.fit([userID, movieID], Y, \
@@ -105,9 +107,9 @@ def main():
    
     print('============================================================')
     print('Save Result')
-    write_result('dnn_simple_' + best_val + '.csv', output)
-    np.savez('dnn_simple_' + best_val + '_history.npz', rmse=H['rmse'], val_rmse=H['val_rmse'])
-    os.rename('dnn_simple_model.h5', 'dnn_simple_' + best_val + '.h5')
+    write_result(PRED_DIR + '/dnn_simple_' + best_val + '.csv', output)
+    np.savez(HIS_DIR + '/dnn_simple_' + best_val + '_history.npz', rmse=H['rmse'], val_rmse=H['val_rmse'])
+    os.rename('dnn_simple_model.h5', MODEL_DIR + '/dnn_simple_' + best_val + '.h5')
 
 if __name__ == '__main__':
     main()
