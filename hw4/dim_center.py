@@ -69,7 +69,7 @@ def main():
 		centers = np.load('C.npy')
 	else:
 		print("compute centers...")
-		centers = find_centers(60, 100)
+		centers = find_centers(60, 3)
 		if SAVE: 
 			np.save('C.npy', centers)
 
