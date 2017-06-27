@@ -30,10 +30,10 @@ def output_result(filename, index, result):
         writer.writerow(['city', 'year', 'weekofyear', 'total_cases'])
         writer.writerows(output)
 
-# argv: [1]data directory
+# argv: [1]data directory [2]prediction file
 DATA_DIR = sys.argv[1]
+PRED_DIR = sys.argv[2]
 MODEL_DIR = '../model'
-PRED_DIR = '../predict'
 HIS_DIR = '../history'
 
 def main():

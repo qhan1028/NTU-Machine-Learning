@@ -12,10 +12,10 @@ from keras.models import load_model
 from Reader import *
 from Preprocess import *
 
-# argv: [1]data directory
+# argv: [1]data directory [2]prediction directory
 DATA_DIR = sys.argv[1]
+PRED_DIR = sys.argv[2]
 MODEL_DIR = '../model'
-PRED_DIR = '../predict'
 HIS_DIR = '../history'
 
 SJ_LIST = 'sj_list.txt'
@@ -97,7 +97,7 @@ def main():
     
     print('\n=================================================================')
     print('Output result')
-    output_result(PRED_DIR + '/vote.csv', index, result)
+    output_result(PRED_DIR + '/result.csv', index, result)
 
 
 if __name__ == '__main__':
