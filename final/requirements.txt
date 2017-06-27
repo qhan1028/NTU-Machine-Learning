@@ -1,0 +1,6 @@
+os
+sys
+numpy >= 1.12.1
+csv
+keras >= 2.0.4
+matplotlib >= 1.5.3
