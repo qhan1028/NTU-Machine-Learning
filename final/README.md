@@ -12,7 +12,7 @@ Machine Learning Final Project
   python3.5 ./src/NeuralNetwork.py <data directory> <prediction directory>
   ```
   * The output file would be `<prediction directory>/sj_[val_mae]_iq_[val_mae].csv`
-* Predict by Ensemble
+* Predict by Ensemble (Reproduce best result)
   ```
   python3.5 ./src/Ensemble.py <data directory> <prediction directory>
   ```
